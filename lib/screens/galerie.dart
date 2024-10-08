@@ -26,6 +26,13 @@ class GalerieScreenState extends State<GalerieScreen> {
     });
   }
 
+  // Aktualisiert die Galerie nach dem Import neuer Fotos
+  void _onPhotosImported(List<File> newPhotos) {
+    setState(() {
+      _encryptedPhotos.addAll(newPhotos); // Neue Fotos zur Galerie hinzufügen
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -34,7 +41,7 @@ class GalerieScreenState extends State<GalerieScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.add),
-            onPressed: () => FileManager.importPhoto(context),
+            onPressed: () => FileManager.importPhotos(context, _onPhotosImported),
           ),
         ],
       ),
@@ -48,24 +55,17 @@ class GalerieScreenState extends State<GalerieScreen> {
               ),
               itemCount: _encryptedPhotos.length,
               itemBuilder: (context, index) {
-                return GestureDetector(
-                  onTap: () {
-                    // Hier könnte die Vorschau eines verschlüsselten Fotos implementiert werden
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Foto ${index + 1} angeklickt')),
-                    );
+                return FutureBuilder<Image>(
+                  future: FileManager.loadThumbnail(_encryptedPhotos[index]), // Thumbnails laden
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+                    if (snapshot.hasError) {
+                      return const Center(child: Icon(Icons.error));
+                    }
+                    return snapshot.data ?? const SizedBox.shrink();
                   },
-                  child: Container(
-                    decoration: BoxDecoration(
-                      border: Border.all(color: Colors.blue),
-                    ),
-                    child: Center(
-                      child: Text(
-                        'Foto ${index + 1}',
-                        style: const TextStyle(fontSize: 16, color: Colors.black),
-                      ),
-                    ),
-                  ),
                 );
               },
             ),
