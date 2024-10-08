@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:saveapp/logik/file_manager.dart';
+import 'photo_view_screen.dart';
 
 class GalerieScreen extends StatefulWidget {
   const GalerieScreen({super.key});
@@ -19,20 +20,19 @@ class GalerieScreenState extends State<GalerieScreen> {
     _loadEncryptedPhotos();
   }
 
-  // Lädt die verschlüsselten Fotos und zugehörigen Thumbnails
+  // Lädt die verschlüsselten Fotos aus dem lokalen Verzeichnis
   Future<void> _loadEncryptedPhotos() async {
     List<File> photos = await FileManager.loadEncryptedPhotos();
     setState(() {
       _encryptedPhotos = photos;
-      // Thumbnails laden oder erstellen
-      _thumbnails = _loadThumbnails(photos);
+      _thumbnails = _loadThumbnails(photos); // Aktualisierte Methode
     });
   }
 
   // Lädt vorhandene Thumbnails
   List<File> _loadThumbnails(List<File> encryptedPhotos) {
     return encryptedPhotos.map((photo) {
-      final thumbnailPath = photo.path.replaceAll('.enc', '_thumbnail.png');
+      final thumbnailPath = photo.path.replaceAll('.enc', '_thumbnail.enc');
       return File(thumbnailPath);
     }).toList();
   }
@@ -64,7 +64,32 @@ class GalerieScreenState extends State<GalerieScreen> {
               ),
               itemCount: _thumbnails.length,
               itemBuilder: (context, index) {
-                return Image.file(_thumbnails[index]);
+                return GestureDetector(
+                  onTap: () {
+                    // Vollbildvorschau öffnen
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => PhotoViewScreen(
+                          imageFiles: _encryptedPhotos,
+                          initialIndex: index,
+                        ),
+                      ),
+                    );
+                  },
+                  child: FutureBuilder<Image>(
+                    future: FileManager.loadThumbnail(_thumbnails[index]), // Thumbnail laden
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return const Center(child: CircularProgressIndicator());
+                      }
+                      if (snapshot.hasError) {
+                        return const Center(child: Icon(Icons.error));
+                      }
+                      return snapshot.data ?? const SizedBox.shrink();
+                    },
+                  ),
+                );
               },
             ),
     );
