@@ -1,6 +1,6 @@
 import 'dart:io';
-import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'dart:typed_data';
 import 'package:path_provider/path_provider.dart';
 import 'package:image_picker/image_picker.dart';
 import 'encryption.dart';
@@ -13,13 +13,14 @@ class FileManager {
   }
 
   // Fotos importieren und verschlüsseln (unterstützt Mehrfachauswahl)
-  static Future<void> importPhotos(BuildContext context, Function(List<File>) onPhotosImported) async {
+  static Future<void> importPhotos(BuildContext context, Function(List<File>, List<File>) onPhotosImported) async {
     final picker = ImagePicker();
     final pickedFiles = await picker.pickMultiImage(); // Mehrfachauswahl
 
     if (pickedFiles.isNotEmpty) {
       final localPath = await _getLocalPath();
       List<File> importedFiles = [];
+      List<File> importedThumbnails = [];
 
       for (var pickedFile in pickedFiles) {
         final photoFile = File(pickedFile.path);
@@ -30,9 +31,17 @@ class FileManager {
         final encryptedFile = File(encryptedFilePath);
         await encryptedFile.writeAsBytes(encryptedData);
 
+        // Generiere und verschlüssele das Thumbnail
+        final thumbnailFile = await Encryption.generateThumbnail(photoFile, localPath);
+        final encryptedThumbnailFile = await Encryption.encryptThumbnail(thumbnailFile, localPath);
+
         // Originaldatei nach Verschlüsselung löschen
         await photoFile.delete();
+        await thumbnailFile.delete(); // Unverschlüsseltes Thumbnail löschen
+
+        // Verschlüsseltes Thumbnail und Foto zur Galerie hinzufügen
         importedFiles.add(encryptedFile);
+        importedThumbnails.add(encryptedThumbnailFile);
       }
 
       // Überprüfen, ob das Widget noch im Baum ist, bevor der Kontext verwendet wird
@@ -41,8 +50,8 @@ class FileManager {
           SnackBar(content: Text('${importedFiles.length} Foto(s) erfolgreich importiert und verschlüsselt!')),
         );
 
-        // Aktualisiere die Galerie mit den neuen Fotos
-        onPhotosImported(importedFiles);
+        // Aktualisiere die Galerie mit den neuen Fotos und Thumbnails
+        onPhotosImported(importedFiles, importedThumbnails);
       }
     }
   }

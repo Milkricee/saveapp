@@ -11,6 +11,7 @@ class GalerieScreen extends StatefulWidget {
 
 class GalerieScreenState extends State<GalerieScreen> {
   List<File> _encryptedPhotos = [];
+  List<File> _thumbnails = [];
 
   @override
   void initState() {
@@ -18,19 +19,22 @@ class GalerieScreenState extends State<GalerieScreen> {
     _loadEncryptedPhotos();
   }
 
-  // Lädt die verschlüsselten Fotos aus dem lokalen Verzeichnis
+  // Lädt die verschlüsselten Fotos und zugehörigen Thumbnails
   Future<void> _loadEncryptedPhotos() async {
     List<File> photos = await FileManager.loadEncryptedPhotos();
     setState(() {
       _encryptedPhotos = photos;
+      // Thumbnails laden oder erstellen
+      _thumbnails = _loadThumbnails(photos);
     });
   }
 
-  // Aktualisiert die Galerie nach dem Import neuer Fotos
-  void _onPhotosImported(List<File> newPhotos) {
-    setState(() {
-      _encryptedPhotos.addAll(newPhotos); // Neue Fotos zur Galerie hinzufügen
-    });
+  // Lädt vorhandene Thumbnails
+  List<File> _loadThumbnails(List<File> encryptedPhotos) {
+    return encryptedPhotos.map((photo) {
+      final thumbnailPath = photo.path.replaceAll('.enc', '_thumbnail.png');
+      return File(thumbnailPath);
+    }).toList();
   }
 
   @override
@@ -41,32 +45,26 @@ class GalerieScreenState extends State<GalerieScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.add),
-            onPressed: () => FileManager.importPhotos(context, _onPhotosImported),
+            onPressed: () => FileManager.importPhotos(context, (files, thumbnails) {
+              setState(() {
+                _encryptedPhotos.addAll(files);
+                _thumbnails.addAll(thumbnails);
+              });
+            }),
           ),
         ],
       ),
-      body: _encryptedPhotos.isEmpty
+      body: _thumbnails.isEmpty
           ? const Center(child: Text('Keine Fotos verfügbar'))
           : GridView.builder(
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 3, // Anzahl der Spalten in der Grid-Ansicht
+                crossAxisCount: 3,
                 crossAxisSpacing: 4.0,
                 mainAxisSpacing: 4.0,
               ),
-              itemCount: _encryptedPhotos.length,
+              itemCount: _thumbnails.length,
               itemBuilder: (context, index) {
-                return FutureBuilder<Image>(
-                  future: FileManager.loadThumbnail(_encryptedPhotos[index]), // Thumbnails laden
-                  builder: (context, snapshot) {
-                    if (snapshot.connectionState == ConnectionState.waiting) {
-                      return const Center(child: CircularProgressIndicator());
-                    }
-                    if (snapshot.hasError) {
-                      return const Center(child: Icon(Icons.error));
-                    }
-                    return snapshot.data ?? const SizedBox.shrink();
-                  },
-                );
+                return Image.file(_thumbnails[index]);
               },
             ),
     );
