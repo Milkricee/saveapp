@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:saveapp/screens/home.dart';
+import 'package:saveapp/screens/login_page.dart'; // Importiere die Login-Seite
 
 void main() {
   runApp(const SaveApp());
@@ -15,8 +15,8 @@ class SaveApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      home: const HomeScreen(),
+      home: const LoginPage(), // LoginPage als Startseite festlegen
+      debugShowCheckedModeBanner: false, // Entfernt das Debug-Banner im Web
     );
   }
 }
-
