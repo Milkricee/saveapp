@@ -94,7 +94,7 @@ class HomeScreenState extends State<HomeScreen> {
   }
 
   static const List<Widget> _pages = <Widget>[
-    GalerieScreen(),
+    GalerieScreen(), // Galerie-Seite
     SettingsScreen(),
   ];
 }

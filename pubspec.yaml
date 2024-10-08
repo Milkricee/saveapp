@@ -7,9 +7,12 @@ environment:
   sdk: '>=3.4.4 <4.0.0'
 
 dependencies:
+  encrypt: ^5.0.3
   flutter:
     sdk: flutter
   flutter_secure_storage: ^9.2.2
+  image_picker: ^1.1.2
+  path_provider: ^2.1.4
 
 dev_dependencies:
   flutter_test:
