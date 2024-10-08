@@ -56,6 +56,16 @@ class FileManager {
     }
   }
 
+  // Foto löschen (sowohl verschlüsselte Datei als auch Thumbnail)
+  static Future<void> deletePhoto(File encryptedFile, File? thumbnailFile) async {
+    if (await encryptedFile.exists()) {
+      await encryptedFile.delete();
+    }
+    if (thumbnailFile != null && await thumbnailFile.exists()) {
+      await thumbnailFile.delete();
+    }
+  }
+
   // Verschlüsselte Fotos aus dem lokalen Verzeichnis laden
   static Future<List<File>> loadEncryptedPhotos() async {
     final localPath = await _getLocalPath();

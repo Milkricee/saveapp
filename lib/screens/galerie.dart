@@ -23,9 +23,10 @@ class GalerieScreenState extends State<GalerieScreen> {
   // Lädt die verschlüsselten Fotos aus dem lokalen Verzeichnis
   Future<void> _loadEncryptedPhotos() async {
     List<File> photos = await FileManager.loadEncryptedPhotos();
+    if (!mounted) return; // Überprüfen, ob das Widget noch aktiv ist
     setState(() {
       _encryptedPhotos = photos;
-      _thumbnails = _loadThumbnails(photos); // Aktualisierte Methode
+      _thumbnails = _loadThumbnails(photos);
     });
   }
 
@@ -46,6 +47,7 @@ class GalerieScreenState extends State<GalerieScreen> {
           IconButton(
             icon: const Icon(Icons.add),
             onPressed: () => FileManager.importPhotos(context, (files, thumbnails) {
+              if (!mounted) return;
               setState(() {
                 _encryptedPhotos.addAll(files);
                 _thumbnails.addAll(thumbnails);
@@ -65,8 +67,8 @@ class GalerieScreenState extends State<GalerieScreen> {
               itemCount: _thumbnails.length,
               itemBuilder: (context, index) {
                 return GestureDetector(
+                  onLongPress: () => _showOptionsMenu(context, index),
                   onTap: () {
-                    // Vollbildvorschau öffnen
                     Navigator.push(
                       context,
                       MaterialPageRoute(
@@ -92,6 +94,51 @@ class GalerieScreenState extends State<GalerieScreen> {
                 );
               },
             ),
+    );
+  }
+
+  // Optionsmenü für Löschen und Export anzeigen
+  void _showOptionsMenu(BuildContext context, int index) {
+    showModalBottomSheet(
+      context: context,
+      builder: (BuildContext context) {
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            ListTile(
+              leading: const Icon(Icons.delete),
+              title: const Text('Löschen'),
+              onTap: () async {
+                await FileManager.deletePhoto(_encryptedPhotos[index], _thumbnails[index]);
+
+                // Überprüfen, ob das Widget noch gemounted ist, bevor der `context` verwendet wird
+                if (!mounted) return;
+
+                setState(() {
+                  _encryptedPhotos.removeAt(index);
+                  _thumbnails.removeAt(index);
+                });
+
+                if (context.mounted) {
+                  Navigator.pop(context); // Schließt das Optionsmenü
+                }
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.file_download),
+              title: const Text('Exportieren'),
+              onTap: () async {
+                await FileManager.exportPhoto(context, _encryptedPhotos[index]);
+
+                // Überprüfen, ob das Widget noch gemounted ist, bevor der `context` verwendet wird
+                if (context.mounted) {
+                  Navigator.pop(context); // Schließt das Optionsmenü
+                }
+              },
+            ),
+          ],
+        );
+      },
     );
   }
 }
