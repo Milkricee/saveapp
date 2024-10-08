@@ -31,20 +31,18 @@ class FileManager {
         final encryptedFile = File(encryptedFilePath);
         await encryptedFile.writeAsBytes(encryptedData);
 
-        // Generiere und verschlüssele das Thumbnail
+        // Generiere das Thumbnail und speichere es unverschlüsselt
         final thumbnailFile = await Encryption.generateThumbnail(photoFile, localPath);
-        final encryptedThumbnailFile = await Encryption.encryptThumbnail(thumbnailFile, localPath);
 
         // Originaldatei nach Verschlüsselung löschen
         await photoFile.delete();
-        await thumbnailFile.delete(); // Unverschlüsseltes Thumbnail löschen
 
-        // Verschlüsseltes Thumbnail und Foto zur Galerie hinzufügen
+        // Verschlüsseltes Foto und unverschlüsseltes Thumbnail zur Galerie hinzufügen
         importedFiles.add(encryptedFile);
-        importedThumbnails.add(encryptedThumbnailFile);
+        importedThumbnails.add(thumbnailFile);
       }
 
-      // Überprüfen, ob das Widget noch im Baum ist, bevor der Kontext verwendet wird
+      // Galerie aktualisieren
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('${importedFiles.length} Foto(s) erfolgreich importiert und verschlüsselt!')),
@@ -56,7 +54,7 @@ class FileManager {
     }
   }
 
-  // Foto löschen (sowohl verschlüsselte Datei als auch Thumbnail)
+  // Foto löschen (sowohl verschlüsselte Datei als auch unverschlüsseltes Thumbnail)
   static Future<void> deletePhoto(File encryptedFile, File? thumbnailFile) async {
     if (await encryptedFile.exists()) {
       await encryptedFile.delete();
@@ -66,38 +64,26 @@ class FileManager {
     }
   }
 
-  // Verschlüsselte Fotos aus dem lokalen Verzeichnis laden
-  static Future<List<File>> loadEncryptedPhotos() async {
+  // Verschlüsselte Fotos und unverschlüsselte Thumbnails aus dem lokalen Verzeichnis laden
+  static Future<Map<String, List<File>>> loadEncryptedFiles() async {
     final localPath = await _getLocalPath();
     final directory = Directory(localPath);
     final files = directory.listSync().whereType<File>().toList();
-    return files.where((file) => file.path.endsWith('.enc')).toList();
-  }
 
-  // Entschlüsselt ein Foto für die Vorschau (Miniaturansicht)
-  static Future<Image> loadThumbnail(File encryptedFile) async {
-    final decryptedBytes = await Encryption.decryptFile(encryptedFile);
-    return Image.memory(
-      Uint8List.fromList(decryptedBytes),
-      fit: BoxFit.cover,
-    );
-  }
+    List<File> encryptedPhotos = [];
+    List<File> thumbnails = [];
 
-  // Foto entschlüsseln und exportieren
-  static Future<void> exportPhoto(BuildContext context, File encryptedFile) async {
-    final decryptedData = await Encryption.decryptFile(encryptedFile);
-    final localPath = await _getLocalPath();
-    final exportPath = '$localPath/export_${DateTime.now().millisecondsSinceEpoch}.jpg';
-
-    // Entschlüsseltes Foto speichern
-    final exportFile = File(exportPath);
-    await exportFile.writeAsBytes(decryptedData);
-
-    // Überprüfen, ob das Widget noch im Baum ist, bevor der Kontext verwendet wird
-    if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Foto erfolgreich exportiert!')),
-      );
+    for (var file in files) {
+      if (file.path.endsWith('.enc')) {
+        encryptedPhotos.add(file); // Normale verschlüsselte Foto-Datei
+      } else if (file.path.contains('thumbnail_')) {
+        thumbnails.add(file); // Unverschlüsseltes Thumbnail
+      }
     }
+
+    return {
+      'photos': encryptedPhotos,
+      'thumbnails': thumbnails,
+    };
   }
 }

@@ -2,7 +2,6 @@ import 'dart:io';
 import 'dart:typed_data';
 import 'package:encrypt/encrypt.dart' as encrypt;
 import 'package:image/image.dart' as img;
-import 'package:flutter/foundation.dart';
 
 class Encryption {
   static final _key = encrypt.Key.fromUtf8('my32lengthsupersecretnooneknows1'); // 32-Byte-Schlüssel für AES256
@@ -20,8 +19,15 @@ class Encryption {
   static Future<Uint8List> decryptFile(File file) async {
     final encrypter = encrypt.Encrypter(encrypt.AES(_key, mode: encrypt.AESMode.cbc));
     final fileBytes = await file.readAsBytes();
-    final decrypted = encrypter.decryptBytes(encrypt.Encrypted(fileBytes), iv: _iv);
-    return Uint8List.fromList(decrypted);
+
+    try {
+      final decrypted = encrypter.decryptBytes(encrypt.Encrypted(fileBytes), iv: _iv);
+      print('Entschlüsselte Datenlänge: ${decrypted.length}');
+      return Uint8List.fromList(decrypted);
+    } catch (e) {
+      print('Fehler bei der Entschlüsselung: $e');
+      return Uint8List(0); // Rückgabe eines leeren Arrays bei Fehler
+    }
   }
 
   // Generiere ein Thumbnail aus einem Bild
@@ -38,15 +44,5 @@ class Encryption {
     await thumbnailFile.writeAsBytes(Uint8List.fromList(img.encodePng(thumbnail)));
 
     return thumbnailFile;
-  }
-
-  // Verschlüsselt das generierte Thumbnail
-  static Future<File> encryptThumbnail(File thumbnailFile, String localPath) async {
-    final encryptedThumbnailPath = '$localPath/thumbnail_${DateTime.now().millisecondsSinceEpoch}.enc';
-    final encryptedThumbnailData = await encryptFile(thumbnailFile);
-    final encryptedThumbnailFile = File(encryptedThumbnailPath);
-    await encryptedThumbnailFile.writeAsBytes(encryptedThumbnailData);
-
-    return encryptedThumbnailFile;
   }
 }

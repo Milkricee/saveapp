@@ -20,22 +20,13 @@ class GalerieScreenState extends State<GalerieScreen> {
     _loadEncryptedPhotos();
   }
 
-  // Lädt die verschlüsselten Fotos aus dem lokalen Verzeichnis
   Future<void> _loadEncryptedPhotos() async {
-    List<File> photos = await FileManager.loadEncryptedPhotos();
-    if (!mounted) return; // Überprüfen, ob das Widget noch aktiv ist
-    setState(() {
-      _encryptedPhotos = photos;
-      _thumbnails = _loadThumbnails(photos);
-    });
-  }
+    var loadedFiles = await FileManager.loadEncryptedFiles();
 
-  // Lädt vorhandene Thumbnails
-  List<File> _loadThumbnails(List<File> encryptedPhotos) {
-    return encryptedPhotos.map((photo) {
-      final thumbnailPath = photo.path.replaceAll('.enc', '_thumbnail.enc');
-      return File(thumbnailPath);
-    }).toList();
+    setState(() {
+      _encryptedPhotos = loadedFiles['photos'] ?? [];
+      _thumbnails = loadedFiles['thumbnails'] ?? [];
+    });
   }
 
   @override
@@ -47,7 +38,6 @@ class GalerieScreenState extends State<GalerieScreen> {
           IconButton(
             icon: const Icon(Icons.add),
             onPressed: () => FileManager.importPhotos(context, (files, thumbnails) {
-              if (!mounted) return;
               setState(() {
                 _encryptedPhotos.addAll(files);
                 _thumbnails.addAll(thumbnails);
@@ -67,7 +57,6 @@ class GalerieScreenState extends State<GalerieScreen> {
               itemCount: _thumbnails.length,
               itemBuilder: (context, index) {
                 return GestureDetector(
-                  onLongPress: () => _showOptionsMenu(context, index),
                   onTap: () {
                     Navigator.push(
                       context,
@@ -79,66 +68,13 @@ class GalerieScreenState extends State<GalerieScreen> {
                       ),
                     );
                   },
-                  child: FutureBuilder<Image>(
-                    future: FileManager.loadThumbnail(_thumbnails[index]), // Thumbnail laden
-                    builder: (context, snapshot) {
-                      if (snapshot.connectionState == ConnectionState.waiting) {
-                        return const Center(child: CircularProgressIndicator());
-                      }
-                      if (snapshot.hasError) {
-                        return const Center(child: Icon(Icons.error));
-                      }
-                      return snapshot.data ?? const SizedBox.shrink();
-                    },
+                  child: Image.file(
+                    _thumbnails[index],
+                    fit: BoxFit.cover,
                   ),
                 );
               },
             ),
-    );
-  }
-
-  // Optionsmenü für Löschen und Export anzeigen
-  void _showOptionsMenu(BuildContext context, int index) {
-    showModalBottomSheet(
-      context: context,
-      builder: (BuildContext context) {
-        return Column(
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            ListTile(
-              leading: const Icon(Icons.delete),
-              title: const Text('Löschen'),
-              onTap: () async {
-                await FileManager.deletePhoto(_encryptedPhotos[index], _thumbnails[index]);
-
-                // Überprüfen, ob das Widget noch gemounted ist, bevor der `context` verwendet wird
-                if (!mounted) return;
-
-                setState(() {
-                  _encryptedPhotos.removeAt(index);
-                  _thumbnails.removeAt(index);
-                });
-
-                if (context.mounted) {
-                  Navigator.pop(context); // Schließt das Optionsmenü
-                }
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.file_download),
-              title: const Text('Exportieren'),
-              onTap: () async {
-                await FileManager.exportPhoto(context, _encryptedPhotos[index]);
-
-                // Überprüfen, ob das Widget noch gemounted ist, bevor der `context` verwendet wird
-                if (context.mounted) {
-                  Navigator.pop(context); // Schließt das Optionsmenü
-                }
-              },
-            ),
-          ],
-        );
-      },
     );
   }
 }
