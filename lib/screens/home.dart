@@ -14,7 +14,6 @@ class HomeScreen extends StatefulWidget {
 class HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0;
   bool _isPasswordSet = false;
-  bool _isFirstPasswordInput = true;
   String _password = '';
   String _confirmPassword = '';
 
@@ -24,7 +23,6 @@ class HomeScreenState extends State<HomeScreen> {
     _checkPasswordStatus();
   }
 
-  // Prüft, ob ein Passwort bereits gesetzt ist (Verwendung der ausgelagerten Logik)
   Future<void> _checkPasswordStatus() async {
     bool passwordExists = await PasswordUIHelper.isPasswordSet();
     setState(() {
@@ -40,42 +38,32 @@ class HomeScreenState extends State<HomeScreen> {
       ),
       body: _isPasswordSet
           ? _buildContent()
-          : _isFirstPasswordInput
-              ? PasswordUIHelper.buildPasswordInput(
-                  context,
-                  _isFirstPasswordInput,
-                  (value) {
-                    setState(() {
-                      _password = value;
-                    });
-                  },
-                  () {
-                    setState(() {
-                      _isFirstPasswordInput = false;
-                    });
-                  },
-                )
-              : PasswordUIHelper.buildPasswordInput(
-                  context,
-                  _isFirstPasswordInput,
-                  (value) {
-                    setState(() {
-                      _confirmPassword = value;
-                    });
-                  },
-                  () async {
-                    if (_password == _confirmPassword) {
-                      await PasswordManager.setNewPassword(_password);
-                      setState(() {
-                        _isPasswordSet = true;
-                      });
-                    } else {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Passwörter stimmen nicht überein!')),
-                      );
-                    }
-                  },
-                ),
+          : PasswordUIHelper.buildPasswordInput(
+              context,
+              true, // Immer `true`, weil wir das Layout für die erste Passwortvergabe anpassen
+              (value) {
+                setState(() {
+                  _password = value;
+                });
+              },
+              (value) {
+                setState(() {
+                  _confirmPassword = value;
+                });
+              },
+              () async {
+                if (_password == _confirmPassword) {
+                  await PasswordManager.setNewPassword(_password);
+                  setState(() {
+                    _isPasswordSet = true;
+                  });
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Passwörter stimmen nicht überein!')),
+                  );
+                }
+              },
+            ),
       bottomNavigationBar: _isPasswordSet
           ? BottomNavigationBar(
               items: const <BottomNavigationBarItem>[
@@ -95,7 +83,6 @@ class HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // App-Inhalt nach erfolgreicher Passwortvergabe
   Widget _buildContent() {
     return _pages[_selectedIndex];
   }

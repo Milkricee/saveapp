@@ -7,11 +7,12 @@ class PasswordUIHelper {
     return await PasswordManager.doesPasswordExist();
   }
 
-  // UI für die initiale Passwortvergabe
+  // UI für die initiale Passwortvergabe mit zwei Eingabefeldern untereinander
   static Widget buildPasswordInput(
     BuildContext context,
     bool isFirstPasswordInput,
     Function(String) onPasswordEntered,
+    Function(String) onConfirmPasswordEntered,
     Function() onNextStep,
   ) {
     return Padding(
@@ -19,11 +20,9 @@ class PasswordUIHelper {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Text(
-            isFirstPasswordInput
-                ? 'Bitte neues Passwort festlegen:'
-                : 'Passwort zur Bestätigung erneut eingeben:',
-            style: const TextStyle(fontSize: 18),
+          const Text(
+            'Bitte neues Passwort festlegen:',
+            style: TextStyle(fontSize: 18),
           ),
           const SizedBox(height: 20),
           TextField(
@@ -32,13 +31,23 @@ class PasswordUIHelper {
             onChanged: (value) => onPasswordEntered(value),
             decoration: const InputDecoration(
               border: OutlineInputBorder(),
-              labelText: 'Passwort',
+              labelText: 'Neues Passwort',
+            ),
+          ),
+          const SizedBox(height: 20),
+          TextField(
+            keyboardType: TextInputType.number,
+            obscureText: true,
+            onChanged: (value) => onConfirmPasswordEntered(value),
+            decoration: const InputDecoration(
+              border: OutlineInputBorder(),
+              labelText: 'Passwort bestätigen',
             ),
           ),
           const SizedBox(height: 20),
           ElevatedButton(
             onPressed: () => onNextStep(),
-            child: Text(isFirstPasswordInput ? 'Weiter' : 'Passwort festlegen'),
+            child: const Text('Passwort festlegen'),
           ),
         ],
       ),
