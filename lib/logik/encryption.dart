@@ -49,4 +49,11 @@ class Encryption {
 
     return thumbnailFile;
   }
+
+   // Verschlüsselt eine beliebige Byte-Liste und gibt die verschlüsselten Bytes zurück
+  static Future<Uint8List> encryptBytes(Uint8List data) async {
+    final encrypter = encrypt.Encrypter(encrypt.AES(_key, mode: encrypt.AESMode.cbc));
+    final encrypted = encrypter.encryptBytes(data, iv: _iv);
+    return encrypted.bytes;
+  }
 }

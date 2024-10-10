@@ -53,12 +53,20 @@ class PhotoViewScreen extends StatelessWidget {
   }
 
   // Entschlüsselt alle Bilddateien und gibt sie als Liste von Uint8List zurück
-  Future<List<Uint8List>> _loadDecryptedImages() async {
-    List<Uint8List> decryptedImages = [];
-    for (var file in imageFiles) {
-      final decryptedBytes = await Encryption.decryptFile(file);
-      decryptedImages.add(decryptedBytes);
+Future<List<Uint8List>> _loadDecryptedImages() async {
+  List<Uint8List> decryptedImages = [];
+  for (var file in imageFiles) {
+    Uint8List bytes;
+
+    if (file.path.endsWith('.enc')) {
+      bytes = await Encryption.decryptFile(file);
+    } else {
+      bytes = await file.readAsBytes(); // Für unverschlüsselte Dateien
     }
-    return decryptedImages;
+
+    decryptedImages.add(bytes);
   }
+  return decryptedImages;
 }
+}
+
