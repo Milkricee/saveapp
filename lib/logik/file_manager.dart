@@ -2,11 +2,24 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 class FileManager {
   // Statusvariable, um den mehrfachen Aufruf zu verhindern
   static bool _isPickerActive = false;
 
+ // Überprüft und fordert die Berechtigungen an
+  static Future<bool> checkAndRequestPermissions() async {
+    final status = await Permission.storage.status;
+
+    if (status.isDenied || status.isPermanentlyDenied) {
+      final result = await Permission.storage.request();
+      return result.isGranted;
+    }
+
+    return status.isGranted;
+  }
+  
   // Pfad zum lokalen Verzeichnis für importierte Fotos
   static Future<String> getLocalPath() async {
     final directory = await getApplicationDocumentsDirectory();
