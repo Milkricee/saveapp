@@ -3,7 +3,6 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:photo_view/photo_view.dart';
 import 'package:photo_view/photo_view_gallery.dart';
-import 'package:saveapp/logik/encryption.dart';
 
 class PhotoViewScreen extends StatelessWidget {
   final List<File> imageFiles;
@@ -22,7 +21,7 @@ class PhotoViewScreen extends StatelessWidget {
         title: const Text('Vollbildvorschau'),
       ),
       body: FutureBuilder<List<Uint8List>>(
-        future: _loadDecryptedImages(),
+        future: Future.wait(imageFiles.map((file) => file.readAsBytes())),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
@@ -52,13 +51,5 @@ class PhotoViewScreen extends StatelessWidget {
     );
   }
 
-  // Entschlüsselt alle Bilddateien und gibt sie als Liste von Uint8List zurück
-  Future<List<Uint8List>> _loadDecryptedImages() async {
-    List<Uint8List> decryptedImages = [];
-    for (var file in imageFiles) {
-      final decryptedBytes = await Encryption.decryptFile(file);
-      decryptedImages.add(decryptedBytes);
-    }
-    return decryptedImages;
-  }
+  
 }
