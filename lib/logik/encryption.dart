@@ -1,6 +1,6 @@
 import 'dart:io';
-import 'dart:typed_data';
 import 'package:encrypt/encrypt.dart' as encrypt;
+import 'package:flutter/foundation.dart';
 import 'package:image/image.dart' as img;
 
 class Encryption {
@@ -22,10 +22,14 @@ class Encryption {
 
     try {
       final decrypted = encrypter.decryptBytes(encrypt.Encrypted(fileBytes), iv: _iv);
-      print('Entschlüsselte Datenlänge: ${decrypted.length}');
+      if (kDebugMode) {
+        print('Entschlüsselte Datenlänge: ${decrypted.length}');
+      }
       return Uint8List.fromList(decrypted);
     } catch (e) {
-      print('Fehler bei der Entschlüsselung: $e');
+      if (kDebugMode) {
+        print('Fehler bei der Entschlüsselung: $e');
+      }
       return Uint8List(0); // Rückgabe eines leeren Arrays bei Fehler
     }
   }

@@ -2,57 +2,54 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:image_picker/image_picker.dart';
-import 'encryption.dart';
 
 class FileManager {
   // Statusvariable, um den mehrfachen Aufruf zu verhindern
   static bool _isPickerActive = false;
 
-  // Pfad zum lokalen Verzeichnis für verschlüsselte Fotos
-  static Future<String> _getLocalPath() async {
+  // Pfad zum lokalen Verzeichnis für importierte Fotos
+  static Future<String> getLocalPath() async {
     final directory = await getApplicationDocumentsDirectory();
     return directory.path;
   }
 
-  // Fotos importieren und verschlüsseln (unterstützt Mehrfachauswahl)
-  static Future<void> importPhotos(BuildContext context, Function(List<File>, List<File>) onPhotosImported) async {
+  // Fotos importieren (unterstützt Mehrfachauswahl)
+  static Future<void> importPhotos(BuildContext context, Function(List<File>) onPhotosImported) async {
     if (_isPickerActive) return; // Wenn bereits aktiv, nichts tun
-    _isPickerActive = true; // Setze den Status auf aktiv
+    _isPickerActive = true;
 
     try {
       final picker = ImagePicker();
       final pickedFiles = await picker.pickMultiImage(); // Mehrfachauswahl
 
-      if (pickedFiles != null && pickedFiles.isNotEmpty) {
-        final localPath = await _getLocalPath();
+      if (pickedFiles.isNotEmpty) {
+        final localPath = await getLocalPath();
         List<File> importedFiles = [];
 
         for (var pickedFile in pickedFiles) {
           final photoFile = File(pickedFile.path);
-          final encryptedFilePath = '$localPath/${DateTime.now().millisecondsSinceEpoch}.enc';
 
-          // Foto verschlüsseln und speichern
-          final encryptedData = await Encryption.encryptFile(photoFile);
-          final encryptedFile = File(encryptedFilePath);
-          await encryptedFile.writeAsBytes(encryptedData);
+          // Überprüfe Dateiformat auf `.jpg` oder `.png`
+          if (!photoFile.path.endsWith('.jpg') && !photoFile.path.endsWith('.png')) {
+            continue; // Überspringe Dateien, die nicht im richtigen Format sind
+          }
 
-          // Originaldatei nach Verschlüsselung löschen
-          await photoFile.delete();
-          importedFiles.add(encryptedFile);
+          final newFilePath = '$localPath/${DateTime.now().millisecondsSinceEpoch}${photoFile.path.endsWith('.jpg') ? '.jpg' : '.png'}';
+
+          // Foto kopieren und speichern
+          final newFile = await photoFile.copy(newFilePath);
+          importedFiles.add(newFile);
         }
 
-        // Überprüfen, ob das Widget noch im Baum ist, bevor der Kontext verwendet wird
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('${importedFiles.length} Foto(s) erfolgreich importiert und verschlüsselt!')),
+            SnackBar(content: Text('${importedFiles.length} Foto(s) erfolgreich importiert!')),
           );
-
-          // Aktualisiere die Galerie mit den neuen Fotos
-          onPhotosImported(importedFiles, []);
+          onPhotosImported(importedFiles);
         }
       }
     } finally {
-      _isPickerActive = false; // Status zurücksetzen, nachdem der Picker fertig ist
+      _isPickerActive = false;
     }
   }
 }
