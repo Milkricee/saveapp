@@ -41,9 +41,14 @@ class GalerieScreenState extends State<GalerieScreen> {
 
     if (kDebugMode) {
       print('Geladene Fotos: $_importedPhotos');
-    } // Debug-Ausgabe
+      // Debug-Ausgabe für verschlüsselte Dateien
+      for (var file in _importedPhotos) {
+        if (file.path.endsWith('.enc')) {
+          print('Gefundene verschlüsselte Datei: ${file.path}');
+        }
+      }
+    }
   }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(

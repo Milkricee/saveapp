@@ -4,10 +4,11 @@ import 'package:flutter/foundation.dart';
 import 'package:image/image.dart' as img;
 
 class Encryption {
-  static final _key = encrypt.Key.fromUtf8('my32lengthsupersecretnooneknows1'); // 32-Byte-Schlüssel für AES256
-  static final _iv = encrypt.IV.fromLength(16); // Initialisierungsvektor (16 Byte)
+  // Stelle sicher, dass der Key und der IV konsistent bleiben.
+  static final _key = encrypt.Key.fromUtf8('my32lengthsupersecretnooneknows1');
+  static final _iv = encrypt.IV.fromUtf8('my16charinitvect'); // Fester IV
 
-  // Verschlüsselt die Datei und gibt die verschlüsselten Bytes zurück
+  // Stelle sicher, dass hier keine neuen IVs generiert werden:
   static Future<Uint8List> encryptFile(File file) async {
     final encrypter = encrypt.Encrypter(encrypt.AES(_key, mode: encrypt.AESMode.cbc));
     final fileBytes = await file.readAsBytes();
