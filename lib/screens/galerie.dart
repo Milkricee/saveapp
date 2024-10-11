@@ -3,7 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:saveapp/logik/encryption.dart';
 import 'package:saveapp/logik/file_manager.dart';
-
+import 'photo_view_screen.dart'; // Importiere den Vollbildmodus
 
 class GalerieScreen extends StatefulWidget {
   const GalerieScreen({super.key});
@@ -49,6 +49,7 @@ class GalerieScreenState extends State<GalerieScreen> {
       }
     }
   }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -93,41 +94,53 @@ class GalerieScreenState extends State<GalerieScreen> {
               itemBuilder: (context, index) {
                 final file = _importedPhotos[index];
 
-                if (file.path.endsWith('.enc')) {
-                  return FutureBuilder<Uint8List>(
-                    future: Encryption.decryptFile(file),
-                    builder: (context, snapshot) {
-                      if (snapshot.connectionState == ConnectionState.waiting) {
-                        return const Center(child: CircularProgressIndicator());
-                      }
-                      if (snapshot.hasError || !snapshot.hasData) {
-                        return const Center(child: Text('Fehler beim Laden des Bildes'));
-                      }
+                // Tippen auf das Bild, um zur Vollbildansicht zu wechseln
+                return GestureDetector(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => PhotoViewScreen(
+                          imageFiles: _importedPhotos, // Alle Bilder werden übergeben
+                          initialIndex: index, // Angezeigtes Bild
+                        ),
+                      ),
+                    );
+                  },
+                  child: file.path.endsWith('.enc')
+                      ? FutureBuilder<Uint8List>(
+                          future: Encryption.decryptFile(file),
+                          builder: (context, snapshot) {
+                            if (snapshot.connectionState == ConnectionState.waiting) {
+                              return const Center(child: CircularProgressIndicator());
+                            }
+                            if (snapshot.hasError || !snapshot.hasData) {
+                              return const Center(child: Text('Fehler beim Laden des Bildes'));
+                            }
 
-                      return Image.memory(
-                        snapshot.data!,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) {
-                          if (kDebugMode) {
-                            print('Fehler beim Laden des Bildes: $error');
-                          }
-                          return const Center(child: Text('Fehler beim Laden des Bildes'));
-                        },
-                      );
-                    },
-                  );
-                } else {
-                  return Image.file(
-                    file,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) {
-                      if (kDebugMode) {
-                        print('Fehler beim Laden des Bildes: $error');
-                      }
-                      return const Center(child: Text('Fehler beim Laden des Bildes'));
-                    },
-                  );
-                }
+                            return Image.memory(
+                              snapshot.data!,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) {
+                                if (kDebugMode) {
+                                  print('Fehler beim Laden des Bildes: $error');
+                                }
+                                return const Center(child: Text('Fehler beim Laden des Bildes'));
+                              },
+                            );
+                          },
+                        )
+                      : Image.file(
+                          file,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            if (kDebugMode) {
+                              print('Fehler beim Laden des Bildes: $error');
+                            }
+                            return const Center(child: Text('Fehler beim Laden des Bildes'));
+                          },
+                        ),
+                );
               },
             ),
     );
