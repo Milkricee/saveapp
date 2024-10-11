@@ -3,8 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:saveapp/galerie_manager/load_save_process.dart'; // GalerieManager importieren
 import 'package:saveapp/galerie_manager/photo_view_navigation.dart'; // PhotoViewNavigation importieren
-
-import '../galerie_manager/bilder_anzeig_logik';
+import 'package:saveapp/galerie_manager/bilder_anzeig_logik.dart';
 import '../logik/file_manager.dart'; // ImageHelper importieren
 
 class GalerieScreen extends StatefulWidget {
@@ -90,12 +89,18 @@ class GalerieScreenState extends State<GalerieScreen> {
 
                 // Tippen auf das Bild, um zur Vollbildansicht zu wechseln
                 return GestureDetector(
-                  onTap: () {
-                    PhotoViewNavigation.navigateToPhotoView(
+                  onTap: () async {
+                    // Auf das Ergebnis des Vollbildmodus warten
+                    final result = await PhotoViewNavigation.navigateToPhotoView(
                       context,
                       _importedPhotos,
                       index,
                     );
+
+                    // Wenn das Bild gelöscht wurde, die Galerie neu laden
+                    if (result == true) {
+                      await _loadPhotos();
+                    }
                   },
                   child: ImageHelper.buildImage(file, context), // Bild über ImageHelper laden
                 );
