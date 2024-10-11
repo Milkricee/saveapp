@@ -26,7 +26,7 @@ class SaveApp extends StatelessWidget {
     requestPermissions(); 
 
     return MaterialApp(
-      title: 'Foto-Safe-App',
+      title: 'SafeApp',
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),

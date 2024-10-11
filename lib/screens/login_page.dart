@@ -1,9 +1,9 @@
-// lib/screens/login_page.dart
-
 import 'package:flutter/material.dart';
+import 'package:saveapp/screens/animated_image_switcher.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:saveapp/logik/password_manager.dart';
-import 'package:saveapp/logik/biometrie.dart'; // Importiere die BiometrieManager
-import 'home.dart'; // Importiere den HomeScreen für die Navigation
+import 'package:saveapp/logik/biometrie.dart';
+import 'home.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -14,7 +14,7 @@ class LoginPage extends StatefulWidget {
 
 class LoginPageState extends State<LoginPage> {
   String _password = '';
-  String _confirmPassword = ''; // Bestätigungspasswort
+  String _confirmPassword = '';
   bool _isPasswordSet = false;
   bool _canCheckBiometrics = false;
   bool _isBiometricsEnabled = false;
@@ -25,10 +25,9 @@ class LoginPageState extends State<LoginPage> {
   void initState() {
     super.initState();
     _checkPasswordStatus();
-    _checkBiometricsStatus(); // Automatische biometrische Prüfung
+    _checkBiometricsStatus();
   }
 
-  // Überprüft, ob ein Passwort bereits gesetzt ist
   Future<void> _checkPasswordStatus() async {
     bool passwordExists = await PasswordManager.doesPasswordExist();
     setState(() {
@@ -36,7 +35,6 @@ class LoginPageState extends State<LoginPage> {
     });
   }
 
-  // Überprüft den Status der Biometrie und startet ggf. die Authentifizierung
   Future<void> _checkBiometricsStatus() async {
     _canCheckBiometrics = await _biometrieManager.canCheckBiometrics();
     _isBiometricsEnabled = await _biometrieManager.isBiometricsEnabled();
@@ -53,24 +51,21 @@ class LoginPageState extends State<LoginPage> {
     }
   }
 
-  // Überprüft das eingegebene Passwort und leitet weiter
- Future<void> _verifyPassword() async {
-  bool isValid = await PasswordManager.verifyPassword(_password);
-  if (!mounted) return; // Check if the widget is still mounted before using the context
-  if (isValid) {
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (context) => const HomeScreen()),
-    );
-  } else {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Falsches Passwort!')),
-    );
+  Future<void> _verifyPassword() async {
+    bool isValid = await PasswordManager.verifyPassword(_password);
+    if (!mounted) return;
+    if (isValid) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const HomeScreen()),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Falsches Passwort!')),
+      );
+    }
   }
-}
 
-
-  // Überprüft, ob beide Passwörter übereinstimmen und setzt das neue Passwort
   Future<void> _setNewPassword() async {
     if (_password == _confirmPassword) {
       await PasswordManager.setNewPassword(_password);
@@ -78,7 +73,7 @@ class LoginPageState extends State<LoginPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Passwort erfolgreich festgelegt!')),
       );
-      await _verifyPassword(); // Direkt zum HomeScreen weiterleiten
+      await _verifyPassword();
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Passwörter stimmen nicht überein!')),
@@ -86,87 +81,99 @@ class LoginPageState extends State<LoginPage> {
     }
   }
 
-  // Handhabt die biometrische Anmeldung über den Button
-Future<void> _handleBiometricLogin() async {
-  bool authenticated = await _biometrieManager.authenticateWithBiometrics();
-  if (!mounted) return; // Check if the widget is still mounted before using the context
-  if (authenticated) {
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (context) => const HomeScreen()),
-    );
-  } else {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Biometrische Authentifizierung fehlgeschlagen!')),
-    );
+  Future<void> _handleBiometricLogin() async {
+    bool authenticated = await _biometrieManager.authenticateWithBiometrics();
+    if (!mounted) return;
+    if (authenticated) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const HomeScreen()),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Biometrische Authentifizierung fehlgeschlagen!')),
+      );
+    }
   }
-}
 
+  Future<void> _launchPaypal() async {
+    const url = 'https://paypal.me/miedrei?country.x=DE&locale.x=de_DE';
+    final Uri paypalUri = Uri.parse(url);
+    if (await canLaunchUrl(paypalUri)) {
+      await launchUrl(paypalUri);
+    } else {
+      throw 'Konnte PayPal-Link nicht öffnen $url';
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Foto-Safe Login'),
+        title: const Text('Login'),
       ),
       body: Padding(
         padding: const EdgeInsets.all(20.0),
-        child: Center(
-          child: SingleChildScrollView( // Ermöglicht Scrollen bei kleinen Bildschirmen
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  _isPasswordSet ? 'Bitte Passwort eingeben:' : 'Bitte neues Passwort festlegen:',
-                  style: const TextStyle(fontSize: 18),
-                ),
-                const SizedBox(height: 20),
-                TextField(
-                  keyboardType: TextInputType.number,
-                  obscureText: true,
-                  onChanged: (value) => _password = value,
-                  decoration: const InputDecoration(
-                    border: OutlineInputBorder(),
-                    labelText: 'Passwort',
-                  ),
-                ),
-                if (!_isPasswordSet) // Wenn Passwort noch nicht gesetzt ist, zeige zweite Eingabe
-                  const SizedBox(height: 20),
-                if (!_isPasswordSet)
-                  TextField(
-                    keyboardType: TextInputType.number,
-                    obscureText: true,
-                    onChanged: (value) => _confirmPassword = value,
-                    decoration: const InputDecoration(
-                      border: OutlineInputBorder(),
-                      labelText: 'Passwort bestätigen',
-                    ),
-                  ),
-                const SizedBox(height: 20),
-                ElevatedButton(
-                  onPressed: () async {
-                    if (_isPasswordSet) {
-                      await _verifyPassword();
-                    } else {
-                      // Überprüfen, ob das Passwort korrekt bestätigt wurde
-                      await _setNewPassword();
-                    }
-                  },
-                  child: Text(_isPasswordSet ? 'Anmelden' : 'Passwort festlegen'),
-                ),
-                if (_canCheckBiometrics && _isBiometricsEnabled) // Wenn Biometrie verfügbar und aktiviert ist, zeige zusätzlichen Button
-                  const SizedBox(height: 20),
-                if (_canCheckBiometrics && _isBiometricsEnabled)
-                  ElevatedButton.icon(
-                    onPressed: () async {
-                      await _handleBiometricLogin();
-                    },
-                    icon: const Icon(Icons.fingerprint),
-                    label: const Text('Mit Fingerabdruck anmelden'),
-                  ),
-              ],
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center, // Zentriert den Inhalt
+          crossAxisAlignment: CrossAxisAlignment.stretch, // Dehnt die Textfelder auf die Breite aus
+          children: [
+            GestureDetector(
+              onTap: _launchPaypal,
+              child: const SizedBox(
+                height: 150, // Höhe des Bildbereichs
+                child: ImageAnimation(), // Animation der Bilder
+              ),
             ),
-          ),
+            const SizedBox(height: 20),
+            Text(
+              _isPasswordSet ? 'Bitte Passwort eingeben:' : 'Bitte neues Passwort festlegen:',
+              style: const TextStyle(fontSize: 18),
+            ),
+            const SizedBox(height: 20),
+            TextField(
+              keyboardType: TextInputType.number,
+              obscureText: true,
+              onChanged: (value) => _password = value,
+              decoration: const InputDecoration(
+                border: OutlineInputBorder(),
+                labelText: 'Passwort',
+              ),
+            ),
+            if (!_isPasswordSet)
+              const SizedBox(height: 20),
+            if (!_isPasswordSet)
+              TextField(
+                keyboardType: TextInputType.number,
+                obscureText: true,
+                onChanged: (value) => _confirmPassword = value,
+                decoration: const InputDecoration(
+                  border: OutlineInputBorder(),
+                  labelText: 'Passwort bestätigen',
+                ),
+              ),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: () async {
+                if (_isPasswordSet) {
+                  await _verifyPassword();
+                } else {
+                  await _setNewPassword();
+                }
+              },
+              child: Text(_isPasswordSet ? 'Anmelden' : 'Passwort festlegen'),
+            ),
+            if (_canCheckBiometrics && _isBiometricsEnabled)
+              const SizedBox(height: 20),
+            if (_canCheckBiometrics && _isBiometricsEnabled)
+              ElevatedButton.icon(
+                onPressed: () async {
+                  await _handleBiometricLogin();
+                },
+                icon: const Icon(Icons.fingerprint),
+                label: const Text('Mit Fingerabdruck anmelden'),
+              ),
+          ],
         ),
       ),
     );
