@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:saveapp/screens/animated_image_switcher.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -24,6 +25,9 @@ class LoginPageState extends State<LoginPage> {
   @override
   void initState() {
     super.initState();
+    if (kDebugMode) {
+      print('LoginPage initialized');
+    }
     _checkPasswordStatus();
     _checkBiometricsStatus();
   }
@@ -36,17 +40,36 @@ class LoginPageState extends State<LoginPage> {
   }
 
   Future<void> _checkBiometricsStatus() async {
+    if (kDebugMode) {
+      print('Checking biometric status');
+    }
     _canCheckBiometrics = await _biometrieManager.canCheckBiometrics();
     _isBiometricsEnabled = await _biometrieManager.isBiometricsEnabled();
+    if (kDebugMode) {
+      print('Can check biometrics: $_canCheckBiometrics');
+    }
+    if (kDebugMode) {
+      print('Is biometrics enabled: $_isBiometricsEnabled');
+    }
 
     if (_canCheckBiometrics && _isBiometricsEnabled) {
+      if (kDebugMode) {
+        print('Attempting biometric authentication');
+      }
       bool authenticated = await _biometrieManager.authenticateWithBiometrics();
       if (authenticated) {
+        if (kDebugMode) {
+          print('Biometric authentication successful');
+        }
         if (!mounted) return;
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => const HomeScreen()),
         );
+      } else {
+        if (kDebugMode) {
+          print('Biometric authentication failed');
+        }
       }
     }
   }
@@ -82,14 +105,23 @@ class LoginPageState extends State<LoginPage> {
   }
 
   Future<void> _handleBiometricLogin() async {
+    if (kDebugMode) {
+      print('Handling biometric login');
+    }
     bool authenticated = await _biometrieManager.authenticateWithBiometrics();
     if (!mounted) return;
     if (authenticated) {
+      if (kDebugMode) {
+        print('Biometric login successful');
+      }
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (context) => const HomeScreen()),
       );
     } else {
+      if (kDebugMode) {
+        print('Biometric login failed');
+      }
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Biometrische Authentifizierung fehlgeschlagen!')),
       );
@@ -121,7 +153,7 @@ class LoginPageState extends State<LoginPage> {
             GestureDetector(
               onTap: _launchPaypal,
               child: const SizedBox(
-                height: 150, // Höhe des Bildbereichs
+                height: 100, // Höhe des Bildbereichs
                 child: ImageAnimation(), // Animation der Bilder
               ),
             ),
@@ -134,7 +166,9 @@ class LoginPageState extends State<LoginPage> {
             TextField(
               keyboardType: TextInputType.number,
               obscureText: true,
-              onChanged: (value) => _password = value,
+              onChanged: (value) {
+                _password = value;
+              },
               decoration: const InputDecoration(
                 border: OutlineInputBorder(),
                 labelText: 'Passwort',
@@ -146,7 +180,9 @@ class LoginPageState extends State<LoginPage> {
               TextField(
                 keyboardType: TextInputType.number,
                 obscureText: true,
-                onChanged: (value) => _confirmPassword = value,
+                onChanged: (value) {
+                  _confirmPassword = value;
+                },
                 decoration: const InputDecoration(
                   border: OutlineInputBorder(),
                   labelText: 'Passwort bestätigen',
@@ -168,6 +204,9 @@ class LoginPageState extends State<LoginPage> {
             if (_canCheckBiometrics && _isBiometricsEnabled)
               ElevatedButton.icon(
                 onPressed: () async {
+                  if (kDebugMode) {
+                    print('Attempting biometric login');
+                  }
                   await _handleBiometricLogin();
                 },
                 icon: const Icon(Icons.fingerprint),

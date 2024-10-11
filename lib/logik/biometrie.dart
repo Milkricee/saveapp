@@ -66,6 +66,16 @@ class BiometrieManager {
     }
   }
 
+  // Biometrie aktivieren
+  Future<void> enableBiometrics() async {
+    await setBiometricsEnabled(true);
+  }
+
+  // Biometrie deaktivieren
+  Future<void> disableBiometrics() async {
+    await setBiometricsEnabled(false);
+  }
+
   // Biometrie aktivieren/deaktivieren (kann in den Einstellungen verwendet werden)
   Future<void> setBiometricsEnabled(bool isEnabled) async {
     try {
