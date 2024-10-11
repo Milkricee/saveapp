@@ -1,9 +1,11 @@
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:saveapp/logik/encryption.dart';
-import 'package:saveapp/logik/file_manager.dart';
-import 'photo_view_screen.dart'; // Importiere den Vollbildmodus
+import 'package:saveapp/galerie_manager/load_save_process.dart'; // GalerieManager importieren
+import 'package:saveapp/galerie_manager/photo_view_navigation.dart'; // PhotoViewNavigation importieren
+
+import '../galerie_manager/bilder_anzeig_logik';
+import '../logik/file_manager.dart'; // ImageHelper importieren
 
 class GalerieScreen extends StatefulWidget {
   const GalerieScreen({super.key});
@@ -15,6 +17,7 @@ class GalerieScreen extends StatefulWidget {
 class GalerieScreenState extends State<GalerieScreen> {
   List<File> _importedPhotos = []; // Liste für importierte Fotos
   bool _isPickerActive = false; // Lokale Variable zur Verhinderung von Mehrfachaufrufen
+  final GalerieManager _galerieManager = GalerieManager(); // GalerieManager Instanz
 
   @override
   void initState() {
@@ -28,25 +31,15 @@ class GalerieScreenState extends State<GalerieScreen> {
     _loadPhotos(); // Fotos jedes Mal laden, wenn die Seite neu angezeigt wird.
   }
 
-  // Lädt gespeicherte Fotos aus dem lokalen Verzeichnis, einschließlich verschlüsselter `.enc`-Dateien
+  // Lädt gespeicherte Fotos aus dem lokalen Verzeichnis
   Future<void> _loadPhotos() async {
-    final localPath = await FileManager.getLocalPath();
-    final directory = Directory(localPath);
-
-    // Liste der Dateien im lokalen Verzeichnis laden und `.jpg`, `.png` sowie `.enc` akzeptieren
-    final files = directory.listSync().whereType<File>().toList();
+    final files = await _galerieManager.loadPhotos();
     setState(() {
-      _importedPhotos = files.where((file) => file.path.endsWith('.jpg') || file.path.endsWith('.png') || file.path.endsWith('.enc')).toList();
+      _importedPhotos = files;
     });
 
     if (kDebugMode) {
       print('Geladene Fotos: $_importedPhotos');
-      // Debug-Ausgabe für verschlüsselte Dateien
-      for (var file in _importedPhotos) {
-        if (file.path.endsWith('.enc')) {
-          print('Gefundene verschlüsselte Datei: ${file.path}');
-        }
-      }
     }
   }
 
@@ -65,6 +58,7 @@ class GalerieScreenState extends State<GalerieScreen> {
               });
 
               try {
+                // Hier wird FileManager.importPhotos verwendet
                 await FileManager.importPhotos(context, (files) {
                   setState(() {
                     _importedPhotos.addAll(files);
@@ -97,49 +91,13 @@ class GalerieScreenState extends State<GalerieScreen> {
                 // Tippen auf das Bild, um zur Vollbildansicht zu wechseln
                 return GestureDetector(
                   onTap: () {
-                    Navigator.push(
+                    PhotoViewNavigation.navigateToPhotoView(
                       context,
-                      MaterialPageRoute(
-                        builder: (context) => PhotoViewScreen(
-                          imageFiles: _importedPhotos, // Alle Bilder werden übergeben
-                          initialIndex: index, // Angezeigtes Bild
-                        ),
-                      ),
+                      _importedPhotos,
+                      index,
                     );
                   },
-                  child: file.path.endsWith('.enc')
-                      ? FutureBuilder<Uint8List>(
-                          future: Encryption.decryptFile(file),
-                          builder: (context, snapshot) {
-                            if (snapshot.connectionState == ConnectionState.waiting) {
-                              return const Center(child: CircularProgressIndicator());
-                            }
-                            if (snapshot.hasError || !snapshot.hasData) {
-                              return const Center(child: Text('Fehler beim Laden des Bildes'));
-                            }
-
-                            return Image.memory(
-                              snapshot.data!,
-                              fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) {
-                                if (kDebugMode) {
-                                  print('Fehler beim Laden des Bildes: $error');
-                                }
-                                return const Center(child: Text('Fehler beim Laden des Bildes'));
-                              },
-                            );
-                          },
-                        )
-                      : Image.file(
-                          file,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) {
-                            if (kDebugMode) {
-                              print('Fehler beim Laden des Bildes: $error');
-                            }
-                            return const Center(child: Text('Fehler beim Laden des Bildes'));
-                          },
-                        ),
+                  child: ImageHelper.buildImage(file, context), // Bild über ImageHelper laden
                 );
               },
             ),

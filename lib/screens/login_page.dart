@@ -54,20 +54,21 @@ class LoginPageState extends State<LoginPage> {
   }
 
   // Überprüft das eingegebene Passwort und leitet weiter
-  Future<void> _verifyPassword() async {
-    bool isValid = await PasswordManager.verifyPassword(_password);
-    if (!mounted) return;
-    if (isValid) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const HomeScreen()),
-      );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Falsches Passwort!')),
-      );
-    }
+ Future<void> _verifyPassword() async {
+  bool isValid = await PasswordManager.verifyPassword(_password);
+  if (!mounted) return; // Check if the widget is still mounted before using the context
+  if (isValid) {
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (context) => const HomeScreen()),
+    );
+  } else {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Falsches Passwort!')),
+    );
   }
+}
+
 
   // Überprüft, ob beide Passwörter übereinstimmen und setzt das neue Passwort
   Future<void> _setNewPassword() async {
@@ -86,19 +87,21 @@ class LoginPageState extends State<LoginPage> {
   }
 
   // Handhabt die biometrische Anmeldung über den Button
-  Future<void> _handleBiometricLogin() async {
-    bool authenticated = await _biometrieManager.authenticateWithBiometrics();
-    if (authenticated) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const HomeScreen()),
-      );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Biometrische Authentifizierung fehlgeschlagen!')),
-      );
-    }
+Future<void> _handleBiometricLogin() async {
+  bool authenticated = await _biometrieManager.authenticateWithBiometrics();
+  if (!mounted) return; // Check if the widget is still mounted before using the context
+  if (authenticated) {
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (context) => const HomeScreen()),
+    );
+  } else {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Biometrische Authentifizierung fehlgeschlagen!')),
+    );
   }
+}
+
 
   @override
   Widget build(BuildContext context) {
