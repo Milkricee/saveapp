@@ -11,9 +11,8 @@ class LoginPage extends StatefulWidget {
 
 class LoginPageState extends State<LoginPage> {
   String _password = '';
+  String _confirmPassword = ''; // Bestätigungspasswort
   bool _isPasswordSet = false;
-
-
 
   @override
   void initState() {
@@ -71,18 +70,37 @@ class LoginPageState extends State<LoginPage> {
                   labelText: 'Passwort',
                 ),
               ),
+              if (!_isPasswordSet) // Wenn Passwort noch nicht gesetzt ist, zeige zweite Eingabe
+                const SizedBox(height: 20),
+              if (!_isPasswordSet)
+                TextField(
+                  keyboardType: TextInputType.number,
+                  obscureText: true,
+                  onChanged: (value) => _confirmPassword = value,
+                  decoration: const InputDecoration(
+                    border: OutlineInputBorder(),
+                    labelText: 'Passwort bestätigen',
+                  ),
+                ),
               const SizedBox(height: 20),
               ElevatedButton(
                 onPressed: () async {
                   if (_isPasswordSet) {
                     await _verifyPassword();
                   } else {
-                    await PasswordManager.setNewPassword(_password);
-                    if (!mounted) return;
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Passwort erfolgreich festgelegt!')),
-                    );
-                    await _verifyPassword(); // Direkt zum HomeScreen weiterleiten
+                    // Überprüfen, ob das Passwort korrekt bestätigt wurde
+                    if (_password == _confirmPassword) {
+                      await PasswordManager.setNewPassword(_password);
+                      if (!mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Passwort erfolgreich festgelegt!')),
+                      );
+                      await _verifyPassword(); // Direkt zum HomeScreen weiterleiten
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Passwörter stimmen nicht überein!')),
+                      );
+                    }
                   }
                 },
                 child: Text(_isPasswordSet ? 'Anmelden' : 'Passwort festlegen'),
