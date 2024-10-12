@@ -1,0 +1,27 @@
+[33m27d25aa[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mtestphase[m[33m, [m[1;31morigin/testphase[m[33m)[m Refactor app icon and launcher settings
+[33mef532db[m[33m ([m[1;31morigin/newbranch[m[33m, [m[1;32mnewbranch[m[33m)[m Refactor PhotoViewScreen to improve image loading and error handling
+[33m2821141[m Refactor biometrics feature and add password change functionality
+[33m9f96e6d[m Refactor app title to 'SafeApp'
+[33m2b90147[m Refactor PhotoViewNavigation to return a boolean indicating if an image was deleted
+[33mfc3325b[m Refactor ImageHelper to improve image loading and error handling
+[33m339ffbc[m[33m ([m[1;31morigin/final[m[33m, [m[1;32mfinal[m[33m)[m Refactor GalerieManager to load and display photos
+[33m02ec6f3[m Refactor FotoBearbeiten to add photo deletion and export functionality
+[33mc7f6377[m Refactor GalerieScreen to add full-screen image view
+[33m60a3a66[m Refactor iOS and Android configurations to add biometric authentication support
+[33mb60bca7[m Refactor LoginPage to add password confirmation field
+[33m214bfef[m Perfekt!!
+[33m0807253[m Refactor encryption and file manager logic
+[33m3752815[m Refactor AndroidManifest.xml to add storage permissions ``
+[33mf64d914[m Refactor encryption.dart and file_manager.dart
+[33m51caedd[m Refactor FileManager to prevent multiple photo picker activation
+[33m0a7369e[m[33m ([m[1;31morigin/testing_branch[m[33m, [m[1;32mtesting_branch[m[33m)[m Refactor encryption and file manager logic
+[33mb9a7a45[m Refactor file imports and screen names
+[33md2d4fb6[m Refactor FileManager to support deleting and exporting photos
+[33m14fc715[m Refactor PhotoViewScreen to load and display encrypted photos
+[33m188e80f[m Refactor GalerieScreen to load encrypted photos and thumbnails
+[33m3d7018d[m Refactor encryption.dart and file_manager.dart
+[33m0805e08[m Refactor FileManager to support importing and encrypting multiple photos
+[33md03e0d7[m Refactor password input UI for initial password setup
+[33m1c894b5[m Refactor password input UI for initial password setup
+[33m745f0bb[m Add password UI helper class and implement password input functionality
+[33ma724712[m[33m ([m[1;31morigin/main[m[33m, [m[1;32mmain[m[33m)[m Add initial project files and configurations
