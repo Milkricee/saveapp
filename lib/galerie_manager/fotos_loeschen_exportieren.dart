@@ -4,12 +4,15 @@ import 'package:path_provider/path_provider.dart';
 
 class FotoBearbeiten {
   // Funktion, um ein oder mehrere Fotos zu löschen
-  static Future<void> fotosLoeschen(List<File> fotos, BuildContext context) async {
-    bool? confirm = await _confirmDialog(
-      context,
-      'Löschen bestätigen',
-      'Möchten Sie wirklich die ausgewählten Fotos löschen?',
-    );
+  static Future<void> fotosLoeschen(List<File> fotos, BuildContext context, {bool skipConfirmation = false}) async {
+    // Nur dann bestätigen, wenn skipConfirmation auf false gesetzt ist
+    bool? confirm = skipConfirmation
+        ? true
+        : await _confirmDialog(
+            context,
+            'Löschen bestätigen',
+            'Möchten Sie wirklich die ausgewählten Fotos löschen?',
+          );
 
     if (confirm == true) {
       for (var foto in fotos) {
@@ -60,6 +63,19 @@ class FotoBearbeiten {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Fotos erfolgreich exportiert')),
         );
+
+        // Frage, ob die Fotos nach dem Export gelöscht werden sollen
+        bool? deleteAfterExport = await _confirmDialog(
+          context,
+          'Löschen nach Export',
+          'Möchten Sie die Fotos nach dem Export aus der App löschen?',
+        );
+
+        if (deleteAfterExport == true) {
+          // Hier die Funktion aufrufen und die Bestätigung überspringen
+          await fotosLoeschen(fotos, context, skipConfirmation: true); // Lösche Fotos ohne weitere Bestätigung
+        }
+
       } catch (e) {
         if (!context.mounted) return; // mounted check
         ScaffoldMessenger.of(context).showSnackBar(

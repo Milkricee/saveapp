@@ -38,7 +38,7 @@ class GalerieScreenState extends State<GalerieScreen> {
     }
   }
 
-  // Foto zum Auswahlliste hinzufügen oder entfernen
+  // Foto zur Auswahlliste hinzufügen oder entfernen
   void _onPhotoLongPressed(File file) {
     setState(() {
       _isSelectionMode = true; // Schalte Auswahlmodus an
@@ -56,6 +56,12 @@ class GalerieScreenState extends State<GalerieScreen> {
       _selectedPhotos.clear();
       _isSelectionMode = false; // Auswahlmodus ausschalten
     });
+  }
+
+  // Galerie aktualisieren, nachdem Fotos gelöscht oder exportiert wurden
+  Future<void> _updateGallery() async {
+    await _loadPhotos(); // Lade die Galerie neu
+    _clearSelection(); // Setze die Auswahl zurück
   }
 
   @override
@@ -149,15 +155,14 @@ class GalerieScreenState extends State<GalerieScreen> {
                     icon: const Icon(Icons.delete, color: Colors.red, size: 30),
                     onPressed: () async {
                       await FotoBearbeiten.fotosLoeschen(_selectedPhotos, context);
-                      _clearSelection();
-                      await _loadPhotos(); // Galerie aktualisieren
+                      await _updateGallery(); // Galerie nach dem Löschen aktualisieren
                     },
                   ),
                   IconButton(
                     icon: const Icon(Icons.file_upload, color: Colors.blue, size: 30),
                     onPressed: () async {
                       await FotoBearbeiten.fotosExportieren(_selectedPhotos, context);
-                      _clearSelection(); // Auswahl zurücksetzen
+                      await _updateGallery(); // Galerie nach dem Export aktualisieren
                     },
                   ),
                 ],
