@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:photo_view/photo_view.dart';
 import 'package:photo_view/photo_view_gallery.dart';
 import 'package:saveapp/logik/encryption.dart';
-import 'package:saveapp/galerie_manager/fotos_loeschen_exportieren.dart'; // Importiere die Lösch- und Export-Logik
+import 'package:saveapp/galerie_manager/fotos_loeschen_exportieren.dart';
 
 class PhotoViewScreen extends StatelessWidget {
   final List<File> imageFiles;
@@ -52,7 +52,7 @@ class PhotoViewScreen extends StatelessWidget {
               );
             },
           ),
-          // Positioned Icons for Delete and Export at the bottom
+          // Icons für Löschen und Exportieren
           Positioned(
             bottom: 20,
             left: 20,
@@ -63,16 +63,34 @@ class PhotoViewScreen extends StatelessWidget {
                 IconButton(
                   icon: const Icon(Icons.delete, color: Colors.red, size: 30),
                   onPressed: () async {
-                    // Bestätigungsdialog anzeigen und dann das Foto löschen
-                    await FotoBearbeiten.fotosLoeschen([imageFiles[initialIndex]], context);
-                    Navigator.pop(context, true); // Rückgabe von `true`, um anzugeben, dass gelöscht wurde
+                    // Regulares Löschen - mit Bestätigung
+                    await FotoBearbeiten.fotosLoeschenMitBestaetigung([imageFiles[initialIndex]], context);
+                    if (!context.mounted) return; // mounted check
+                    Navigator.pop(context, true); // Galerie neu laden nach Löschen
                   },
                 ),
                 IconButton(
                   icon: const Icon(Icons.file_upload, color: Colors.blue, size: 30),
                   onPressed: () async {
-                    // Exportiere das aktuelle Foto
-                    await FotoBearbeiten.fotosExportieren([imageFiles[initialIndex]], context);
+                    // Exportieren des Fotos
+                    bool? exportConfirmed = await FotoBearbeiten.confirmDialog(
+                      context,
+                      'Export bestätigen',
+                      'Möchten Sie wirklich das Foto exportieren?',
+                    );
+
+                    if (exportConfirmed != true) {
+                      return; // Falls Abbrechen gedrückt wurde, beenden
+                    }
+                    if (!context.mounted) return; // mounted check
+                    await FotoBearbeiten.fotosExportierenOhneBestaetigung([imageFiles[initialIndex]], context);                
+                      if (!context.mounted) return; // mounted check
+                      // Löschen ohne erneute Bestätigung
+                      await FotoBearbeiten.fotosLoeschenMitBestaetigung([imageFiles[initialIndex]], context);
+                    
+
+                    if (!context.mounted) return; // mounted check
+                    Navigator.pop(context, true); // Galerie neu laden nach Export und optionalem Löschen
                   },
                 ),
               ],
@@ -83,18 +101,12 @@ class PhotoViewScreen extends StatelessWidget {
     );
   }
 
-  // Entschlüsselt alle Bilddateien und gibt sie als Liste von Uint8List zurück
   Future<List<Uint8List>> _loadDecryptedImages() async {
     List<Uint8List> decryptedImages = [];
     for (var file in imageFiles) {
-      Uint8List bytes;
-
-      if (file.path.endsWith('.enc')) {
-        bytes = await Encryption.decryptFile(file);
-      } else {
-        bytes = await file.readAsBytes(); // Für unverschlüsselte Dateien
-      }
-
+      Uint8List bytes = file.path.endsWith('.enc')
+          ? await Encryption.decryptFile(file)
+          : await file.readAsBytes();
       decryptedImages.add(bytes);
     }
     return decryptedImages;

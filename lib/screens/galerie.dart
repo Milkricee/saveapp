@@ -154,14 +154,14 @@ class GalerieScreenState extends State<GalerieScreen> {
                   IconButton(
                     icon: const Icon(Icons.delete, color: Colors.red, size: 30),
                     onPressed: () async {
-                      await FotoBearbeiten.fotosLoeschen(_selectedPhotos, context);
+                      await FotoBearbeiten.fotosLoeschenMitBestaetigung(_selectedPhotos, context);
                       await _updateGallery(); // Galerie nach dem Löschen aktualisieren
                     },
                   ),
                   IconButton(
                     icon: const Icon(Icons.file_upload, color: Colors.blue, size: 30),
                     onPressed: () async {
-                      await FotoBearbeiten.fotosExportieren(_selectedPhotos, context);
+                      await FotoBearbeiten.fotosExportierenMitBestaetigung(_selectedPhotos, context);
                       await _updateGallery(); // Galerie nach dem Export aktualisieren
                     },
                   ),
