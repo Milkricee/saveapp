@@ -1,10 +1,11 @@
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:saveapp/galerie_manager/load_save_process.dart'; // GalerieManager importieren
-import 'package:saveapp/galerie_manager/photo_view_navigation.dart'; // PhotoViewNavigation importieren
+import 'package:saveapp/galerie_manager/load_save_process.dart';
+import 'package:saveapp/galerie_manager/photo_view_navigation.dart';
 import 'package:saveapp/galerie_manager/bilder_anzeig_logik.dart';
-import '../logik/file_manager.dart'; // ImageHelper importieren
+import '../logik/file_manager.dart';
+import 'package:saveapp/galerie_manager/fotos_loeschen_exportieren.dart'; // Importieren für Lösch- und Exportlogik
 
 class GalerieScreen extends StatefulWidget {
   const GalerieScreen({super.key});
@@ -14,23 +15,18 @@ class GalerieScreen extends StatefulWidget {
 }
 
 class GalerieScreenState extends State<GalerieScreen> {
-  List<File> _importedPhotos = []; // Liste für importierte Fotos
-  bool _isPickerActive = false; // Lokale Variable zur Verhinderung von Mehrfachaufrufen
-  final GalerieManager _galerieManager = GalerieManager(); // GalerieManager Instanz
+  List<File> _importedPhotos = [];
+  final List<File> _selectedPhotos = []; // Liste der ausgewählten Fotos
+  bool _isPickerActive = false;
+  bool _isSelectionMode = false; // Status für Auswahlmodus
+  final GalerieManager _galerieManager = GalerieManager();
 
   @override
   void initState() {
     super.initState();
-    _loadPhotos(); // Lade gespeicherte Fotos beim Start
+    _loadPhotos();
   }
 
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    _loadPhotos(); // Fotos jedes Mal laden, wenn die Seite neu angezeigt wird.
-  }
-
-  // Lädt gespeicherte Fotos aus dem lokalen Verzeichnis
   Future<void> _loadPhotos() async {
     final files = await _galerieManager.loadPhotos();
     setState(() {
@@ -42,6 +38,26 @@ class GalerieScreenState extends State<GalerieScreen> {
     }
   }
 
+  // Foto zum Auswahlliste hinzufügen oder entfernen
+  void _onPhotoLongPressed(File file) {
+    setState(() {
+      _isSelectionMode = true; // Schalte Auswahlmodus an
+      if (_selectedPhotos.contains(file)) {
+        _selectedPhotos.remove(file); // Wenn bereits ausgewählt, entfernen
+      } else {
+        _selectedPhotos.add(file); // Sonst hinzufügen
+      }
+    });
+  }
+
+  // Auswahl zurücksetzen
+  void _clearSelection() {
+    setState(() {
+      _selectedPhotos.clear();
+      _isSelectionMode = false; // Auswahlmodus ausschalten
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -51,13 +67,12 @@ class GalerieScreenState extends State<GalerieScreen> {
           IconButton(
             icon: const Icon(Icons.add),
             onPressed: () async {
-              if (_isPickerActive) return; // Prüfen, ob Picker bereits aktiv ist
+              if (_isPickerActive) return;
               setState(() {
                 _isPickerActive = true;
               });
 
               try {
-                // Hier wird FileManager.importPhotos verwendet
                 await FileManager.importPhotos(context, (files) {
                   setState(() {
                     _importedPhotos.addAll(files);
@@ -68,44 +83,88 @@ class GalerieScreenState extends State<GalerieScreen> {
                 });
               } finally {
                 setState(() {
-                  _isPickerActive = false; // Status zurücksetzen
+                  _isPickerActive = false;
                 });
               }
             },
           ),
         ],
       ),
-      body: _importedPhotos.isEmpty
-          ? const Center(child: Text('Keine Fotos verfügbar'))
-          : GridView.builder(
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 3,
-                crossAxisSpacing: 4.0,
-                mainAxisSpacing: 4.0,
-              ),
-              itemCount: _importedPhotos.length,
-              itemBuilder: (context, index) {
-                final file = _importedPhotos[index];
+      body: Stack(
+        children: [
+          _importedPhotos.isEmpty
+              ? const Center(child: Text('Keine Fotos verfügbar'))
+              : GridView.builder(
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 3,
+                    crossAxisSpacing: 4.0,
+                    mainAxisSpacing: 4.0,
+                  ),
+                  itemCount: _importedPhotos.length,
+                  itemBuilder: (context, index) {
+                    final file = _importedPhotos[index];
 
-                // Tippen auf das Bild, um zur Vollbildansicht zu wechseln
-                return GestureDetector(
-                  onTap: () async {
-                    // Auf das Ergebnis des Vollbildmodus warten
-                    final result = await PhotoViewNavigation.navigateToPhotoView(
-                      context,
-                      _importedPhotos,
-                      index,
+                    return GestureDetector(
+                      onLongPress: () => _onPhotoLongPressed(file), // Langes Drücken, um Fotos auszuwählen
+                      onTap: () async {
+                        if (_isSelectionMode) {
+                          _onPhotoLongPressed(file); // Bei Auswahlmodus kurzes Drücken für Auswahl
+                        } else {
+                          final result = await PhotoViewNavigation.navigateToPhotoView(
+                            context,
+                            _importedPhotos,
+                            index,
+                          );
+                          if (result == true) {
+                            await _loadPhotos();
+                          }
+                        }
+                      },
+                      child: Stack(
+                        children: [
+                          ImageHelper.buildImage(file, context),
+                          if (_selectedPhotos.contains(file))
+                            const Positioned(
+                              top: 0,
+                              right: 0,
+                              child: Icon(
+                                Icons.check_circle,
+                                color: Colors.blue,
+                              ),
+                            ),
+                        ],
+                      ),
                     );
-
-                    // Wenn das Bild gelöscht wurde, die Galerie neu laden
-                    if (result == true) {
-                      await _loadPhotos();
-                    }
                   },
-                  child: ImageHelper.buildImage(file, context), // Bild über ImageHelper laden
-                );
-              },
+                ),
+          if (_isSelectionMode)
+            Positioned(
+              bottom: 10,
+              left: 20,
+              right: 20,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.delete, color: Colors.red, size: 30),
+                    onPressed: () async {
+                      await FotoBearbeiten.fotosLoeschen(_selectedPhotos, context);
+                      _clearSelection();
+                      await _loadPhotos(); // Galerie aktualisieren
+                    },
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.file_upload, color: Colors.blue, size: 30),
+                    onPressed: () async {
+                      await FotoBearbeiten.fotosExportieren(_selectedPhotos, context);
+                      _clearSelection(); // Auswahl zurücksetzen
+                    },
+                  ),
+                ],
+              ),
             ),
+        ],
+      ),
     );
   }
 }
