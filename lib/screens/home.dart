@@ -17,7 +17,7 @@ class HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Foto-Safe-App'),
+        title: const Text('Foto Safe'),
       ),
       body: _buildContent(),
       bottomNavigationBar: BottomNavigationBar(
