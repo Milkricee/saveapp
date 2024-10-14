@@ -1,16 +1,14 @@
 buildscript {
-    ext.kotlin_version = '1.6.0'  // oder 1.8.22, wenn nötig
+    ext.kotlin_version = '1.7.10'  // Mindestanforderung
     repositories {
         google()
         mavenCentral()
     }
     dependencies {
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
-        classpath 'com.android.tools.build:gradle:8.0.2'  // Stelle sicher, dass das Plugin auf dem neuesten Stand ist
+        classpath 'com.android.tools.build:gradle:7.3.0'  // Gradle-Version angepasst
     }
 }
-
-
 
 plugins {
     id "com.android.application"
@@ -31,8 +29,8 @@ def flutterVersionName = localProperties.getProperty("flutter.versionName", "1.0
 
 android {
     namespace = "com.example.saveapp"
-    compileSdkVersion 34  // Beispiel: Setze es explizit
-    ndkVersion "23.1.7779620" // Beispiel, kannst du anpassen
+    compileSdkVersion 34  // Setze auf die neuste SDK-Version
+    ndkVersion "23.1.7779620"  // Du kannst es anpassen oder weglassen
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_1_8
@@ -49,7 +47,9 @@ android {
 
     buildTypes {
         release {
-            signingConfig = signingConfigs.debug
+            minifyEnabled false  // Minify kann für Debugging deaktiviert sein
+            //signingConfig signingConfigs.debug  // Deaktivieren, falls nicht erforderlich
+             shrinkResources false  // Deaktiviert die Ressourcenschrumpfung       
         }
     }
 }
