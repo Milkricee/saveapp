@@ -1,37 +1,72 @@
 import 'package:flutter/material.dart';
 import 'package:saveapp/screens/login_page.dart'; // Importiere die Login-Seite
-import 'package:permission_handler/permission_handler.dart';
+
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 void main() {
   runApp(const SaveApp());
 }
 
-class SaveApp extends StatelessWidget {
+class SaveApp extends StatefulWidget {
   const SaveApp({super.key});
 
-  Future<void> requestPermissions() async {
-    // Speicherzugriffsberechtigung anfordern
-    var status = await Permission.storage.status;
-    if (!status.isGranted) {
-      await Permission.storage.request();
+  @override
+  State<SaveApp> createState() => SaveAppState();
+}
+
+class SaveAppState extends State<SaveApp> with WidgetsBindingObserver {
+  bool _wasInBackground = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this); // Lifecycle-Observer hinzufügen
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this); // Observer entfernen
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    debugPrint('AppLifecycleState changed to: $state');
+
+    if (state == AppLifecycleState.resumed && _wasInBackground) {
+      _wasInBackground = false;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _navigateToLogin(); // Navigiere zur Login-Seite nach Rückkehr
+      });
     }
 
-    // Die biometrische Berechtigung wird hier nicht angefordert, 
-    // sie wird durch die local_auth-Bibliothek verwaltet.
+    if (state == AppLifecycleState.paused || state == AppLifecycleState.hidden) {
+      _wasInBackground = true;
+      debugPrint('App wurde in den Hintergrund verschoben, _wasInBackground = $_wasInBackground');
+    }
+  }
+
+  Future<void> _navigateToLogin() async {
+    // Verwende den globalen Navigator-Schlüssel
+    debugPrint('Navigating to LoginPage...');
+    if (navigatorKey.currentState?.canPop() ?? false) {
+      navigatorKey.currentState?.popUntil((route) => route.isFirst);
+    }
+    navigatorKey.currentState?.pushReplacement(
+      MaterialPageRoute(builder: (context) => const LoginPage()),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    // Berechtigungen beim Start anfordern
-    requestPermissions(); 
-
     return MaterialApp(
       title: 'SafeApp',
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      home: const LoginPage(), // LoginPage als Startseite festlegen
-      debugShowCheckedModeBanner: false, // Entfernt das Debug-Banner im Web
+      navigatorKey: navigatorKey, // Setze den globalen Navigator-Schlüssel
+      home: const LoginPage(), // Login-Seite als Startseite
+      debugShowCheckedModeBanner: false,
     );
   }
 }
