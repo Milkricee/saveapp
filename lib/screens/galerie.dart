@@ -1,9 +1,9 @@
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:saveapp/galerie_manager/thumbnail_manager.dart';
 import 'package:saveapp/galerie_manager/load_save_process.dart';
 import 'package:saveapp/galerie_manager/photo_view_navigation.dart';
-import 'package:saveapp/galerie_manager/bilder_anzeig_logik.dart';
 import '../logik/file_manager.dart';
 import 'package:saveapp/galerie_manager/fotos_loeschen_exportieren.dart'; // Importieren für Lösch- und Exportlogik
 
@@ -110,36 +110,54 @@ class GalerieScreenState extends State<GalerieScreen> {
                   itemBuilder: (context, index) {
                     final file = _importedPhotos[index];
 
-                    return GestureDetector(
-                      onLongPress: () => _onPhotoLongPressed(file), // Langes Drücken, um Fotos auszuwählen
-                      onTap: () async {
-                        if (_isSelectionMode) {
-                          _onPhotoLongPressed(file); // Bei Auswahlmodus kurzes Drücken für Auswahl
-                        } else {
-                          final result = await PhotoViewNavigation.navigateToPhotoView(
-                            context,
-                            _importedPhotos,
-                            index,
-                          );
-                          if (result == true) {
-                            await _loadPhotos();
-                          }
+                    return FutureBuilder<File>(
+                      future: ThumbnailManager.getOrCreateThumbnail(file), // Lade das Thumbnail
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState == ConnectionState.waiting) {
+                          return const Center(child: CircularProgressIndicator());
                         }
-                      },
-                      child: Stack(
-                        children: [
-                          ImageHelper.buildImage(file, context),
-                          if (_selectedPhotos.contains(file))
-                            const Positioned(
-                              top: 0,
-                              right: 0,
-                              child: Icon(
-                                Icons.check_circle,
-                                color: Colors.blue,
+                        if (snapshot.hasError || !snapshot.hasData) {
+                          return const Center(child: Text('Fehler beim Laden des Thumbnails'));
+                        }
+
+                        return GestureDetector(
+                          onLongPress: () => _onPhotoLongPressed(file), // Langes Drücken, um Fotos auszuwählen
+                          onTap: () async {
+                            if (_isSelectionMode) {
+                              _onPhotoLongPressed(file); // Bei Auswahlmodus kurzes Drücken für Auswahl
+                            } else {
+                              final result = await PhotoViewNavigation.navigateToPhotoView(
+                                context,
+                                _importedPhotos,
+                                index,
+                              );
+                              if (result == true) {
+                                await _loadPhotos();
+                              }
+                            }
+                          },
+                          child: Stack(
+                            children: [
+                              Image.file(
+                                snapshot.data!,
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) {
+                                  return const Center(child: Text('Fehler beim Laden des Thumbnails'));
+                                },
                               ),
-                            ),
-                        ],
-                      ),
+                              if (_selectedPhotos.contains(file))
+                                const Positioned(
+                                  top: 0,
+                                  right: 0,
+                                  child: Icon(
+                                    Icons.check_circle,
+                                    color: Colors.blue,
+                                  ),
+                                ),
+                            ],
+                          ),
+                        );
+                      },
                     );
                   },
                 ),
