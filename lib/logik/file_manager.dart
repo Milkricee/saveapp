@@ -144,4 +144,26 @@ class FileManager {
 
     return extractedFiles;
   }
+
+  // Fotos aus dem lokalen Verzeichnis laden
+static Future<List<File>> loadPhotos() async {
+  final localPath = await getLocalPath();
+  final photoDirectory = Directory(localPath);
+
+  if (!photoDirectory.existsSync()) {
+    photoDirectory.createSync(); // Erstelle das Verzeichnis, falls es nicht existiert
+  }
+
+  // Lade alle Dateien mit den Endungen .jpg, .png oder .enc
+  return photoDirectory
+      .listSync()
+      .whereType<File>()
+      .where((file) =>
+          file.path.endsWith('.jpg') ||
+          file.path.endsWith('.png') ||
+          file.path.endsWith('.enc')) // Verschlüsselte Fotos
+      .toList();
 }
+
+}
+
