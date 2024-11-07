@@ -1,9 +1,9 @@
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:saveapp/galerie_manager/thumbnail_manager.dart';
 import 'package:saveapp/galerie_manager/load_save_process.dart';
 import 'package:saveapp/galerie_manager/photo_view_navigation.dart';
-import 'package:saveapp/galerie_manager/bilder_anzeig_logik.dart';
 import '../logik/file_manager.dart';
 import 'package:saveapp/galerie_manager/fotos_loeschen_exportieren.dart';
 
