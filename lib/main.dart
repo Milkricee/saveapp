@@ -63,9 +63,10 @@ class SaveAppState extends State<SaveApp> with WidgetsBindingObserver {
       title: 'SafeApp',
       theme: ThemeData(
         primarySwatch: Colors.blue,
+        scaffoldBackgroundColor: Colors.white, // Hintergrundfarbe setzen
       ),
-      navigatorKey: navigatorKey, // Setze den globalen Navigator-Schlüssel
-      home: const LoginPage(), // Login-Seite als Startseite
+      navigatorKey: navigatorKey,
+      home: const LoginPage(), // Home- oder Login-Seite einbinden
       debugShowCheckedModeBanner: false,
     );
   }

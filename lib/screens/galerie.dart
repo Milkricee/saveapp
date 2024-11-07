@@ -5,7 +5,7 @@ import 'package:saveapp/galerie_manager/load_save_process.dart';
 import 'package:saveapp/galerie_manager/photo_view_navigation.dart';
 import 'package:saveapp/galerie_manager/bilder_anzeig_logik.dart';
 import '../logik/file_manager.dart';
-import 'package:saveapp/galerie_manager/fotos_loeschen_exportieren.dart'; // Importieren für Lösch- und Exportlogik
+import 'package:saveapp/galerie_manager/fotos_loeschen_exportieren.dart';
 
 class GalerieScreen extends StatefulWidget {
   const GalerieScreen({super.key});
@@ -16,7 +16,7 @@ class GalerieScreen extends StatefulWidget {
 
 class GalerieScreenState extends State<GalerieScreen> {
   List<File> _importedPhotos = [];
-  final List<File> _selectedPhotos = []; // Liste der ausgewählten Fotos
+  final ValueNotifier<List<File>> _selectedPhotos = ValueNotifier<List<File>>([]); // Benutze ValueNotifier
   bool _isPickerActive = false;
   bool _isSelectionMode = false; // Status für Auswahlmodus
   final GalerieManager _galerieManager = GalerieManager();
@@ -39,23 +39,19 @@ class GalerieScreenState extends State<GalerieScreen> {
   }
 
   // Foto zur Auswahlliste hinzufügen oder entfernen
-  void _onPhotoLongPressed(File file) {
-    setState(() {
-      _isSelectionMode = true; // Schalte Auswahlmodus an
-      if (_selectedPhotos.contains(file)) {
-        _selectedPhotos.remove(file); // Wenn bereits ausgewählt, entfernen
-      } else {
-        _selectedPhotos.add(file); // Sonst hinzufügen
-      }
-    });
+  void _togglePhotoSelection(File file) {
+    if (_selectedPhotos.value.contains(file)) {
+      _selectedPhotos.value = List.from(_selectedPhotos.value)..remove(file);
+    } else {
+      _selectedPhotos.value = List.from(_selectedPhotos.value)..add(file);
+    }
+    _isSelectionMode = _selectedPhotos.value.isNotEmpty;
   }
 
   // Auswahl zurücksetzen
   void _clearSelection() {
-    setState(() {
-      _selectedPhotos.clear();
-      _isSelectionMode = false; // Auswahlmodus ausschalten
-    });
+    _selectedPhotos.value = [];
+    _isSelectionMode = false;
   }
 
   // Galerie aktualisieren, nachdem Fotos gelöscht oder exportiert wurden
@@ -101,45 +97,60 @@ class GalerieScreenState extends State<GalerieScreen> {
           _importedPhotos.isEmpty
               ? const Center(child: Text('Keine Fotos verfügbar'))
               : GridView.builder(
+                  padding: const EdgeInsets.all(8.0), // Einheitliches Padding
                   gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: 3,
-                    crossAxisSpacing: 4.0,
-                    mainAxisSpacing: 4.0,
+                    crossAxisSpacing: 8.0,
+                    mainAxisSpacing: 8.0,
                   ),
                   itemCount: _importedPhotos.length,
                   itemBuilder: (context, index) {
                     final file = _importedPhotos[index];
 
-                    return GestureDetector(
-                      onLongPress: () => _onPhotoLongPressed(file), // Langes Drücken, um Fotos auszuwählen
-                      onTap: () async {
-                        if (_isSelectionMode) {
-                          _onPhotoLongPressed(file); // Bei Auswahlmodus kurzes Drücken für Auswahl
-                        } else {
-                          final result = await PhotoViewNavigation.navigateToPhotoView(
-                            context,
-                            _importedPhotos,
-                            index,
-                          );
-                          if (result == true) {
-                            await _loadPhotos();
-                          }
-                        }
-                      },
-                      child: Stack(
-                        children: [
-                          ImageHelper.buildImage(file, context),
-                          if (_selectedPhotos.contains(file))
-                            const Positioned(
-                              top: 0,
-                              right: 0,
-                              child: Icon(
-                                Icons.check_circle,
-                                color: Colors.blue,
-                              ),
+                    return ValueListenableBuilder<List<File>>(
+                      valueListenable: _selectedPhotos,
+                      builder: (context, selectedPhotos, child) {
+                        return GestureDetector(
+                          onLongPress: () => _togglePhotoSelection(file), // Auswahl ein-/ausschalten
+                          onTap: () async {
+                            if (_isSelectionMode) {
+                              _togglePhotoSelection(file); // Auswahlmodus aktivieren
+                            } else {
+                              final result = await PhotoViewNavigation.navigateToPhotoView(
+                                context,
+                                _importedPhotos,
+                                index,
+                              );
+                              if (result == true) {
+                                await _loadPhotos();
+                              }
+                            }
+                          },
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(8.0),
+                              border: selectedPhotos.contains(file)
+                                  ? Border.all(color: Colors.blue, width: 2)
+                                  : null, // Rahmen für ausgewählte Fotos
                             ),
-                        ],
-                      ),
+                            child: Stack(
+                              children: [
+                                ImageHelper.buildImage(file, context),
+                                if (selectedPhotos.contains(file))
+                                  const Positioned(
+                                    top: 0,
+                                    right: 0,
+                                    child: Icon(
+                                      Icons.check_circle,
+                                      color: Colors.blue,
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
                     );
                   },
                 ),
@@ -154,14 +165,14 @@ class GalerieScreenState extends State<GalerieScreen> {
                   IconButton(
                     icon: const Icon(Icons.delete, color: Colors.red, size: 30),
                     onPressed: () async {
-                      await FotoBearbeiten.fotosLoeschenMitBestaetigung(_selectedPhotos, context);
+                      await FotoBearbeiten.fotosLoeschenMitBestaetigung(_selectedPhotos.value, context);
                       await _updateGallery(); // Galerie nach dem Löschen aktualisieren
                     },
                   ),
                   IconButton(
                     icon: const Icon(Icons.file_upload, color: Colors.blue, size: 30),
                     onPressed: () async {
-                      await FotoBearbeiten.fotosExportierenMitBestaetigung(_selectedPhotos, context);
+                      await FotoBearbeiten.fotosExportierenMitBestaetigung(_selectedPhotos.value, context);
                       await _updateGallery(); // Galerie nach dem Export aktualisieren
                     },
                   ),

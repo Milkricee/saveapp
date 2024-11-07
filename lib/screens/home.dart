@@ -11,7 +11,7 @@ class HomeScreen extends StatefulWidget {
 }
 
 class HomeScreenState extends State<HomeScreen> {
-  final HomeScreenLogic _logic = HomeScreenLogic(); // Logik-Instanz erstellen
+  final HomeScreenLogic _logic = HomeScreenLogic();
 
   @override
   Widget build(BuildContext context) {
@@ -19,7 +19,11 @@ class HomeScreenState extends State<HomeScreen> {
       appBar: AppBar(
         title: const Text('Foto Safe'),
       ),
-      body: _buildContent(),
+      backgroundColor: Colors.white, // Hintergrundfarbe des Screens
+      body: Padding(
+        padding: const EdgeInsets.all(8.0), // Einheitliches Padding für den Body
+        child: _pages[_logic.selectedIndex],
+      ),
       bottomNavigationBar: BottomNavigationBar(
         items: const <BottomNavigationBarItem>[
           BottomNavigationBarItem(
@@ -32,17 +36,14 @@ class HomeScreenState extends State<HomeScreen> {
           ),
         ],
         currentIndex: _logic.selectedIndex,
-        onTap: (index) => _logic.onItemTapped(index, setState), // Logik verwenden
+        onTap: (index) => _logic.onItemTapped(index, setState),
       ),
     );
   }
 
-  Widget _buildContent() {
-    return _pages[_logic.selectedIndex];
-  }
-
   static const List<Widget> _pages = <Widget>[
-    GalerieScreen(),
+    GalerieScreen(), // Galerie-Seite einfügen
     SettingsScreen(),
   ];
 }
+
