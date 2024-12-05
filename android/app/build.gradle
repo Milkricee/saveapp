@@ -28,6 +28,15 @@ def flutterVersionCode = localProperties.getProperty("flutter.versionCode", "1")
 def flutterVersionName = localProperties.getProperty("flutter.versionName", "1.0")
 
 android {
+    signingConfigs {
+        release {
+            keyAlias 'my-key-alias'
+            keyPassword '123456'
+            storeFile file('C:/Users/Daniel/my-release-key.keystore')
+            storePassword '123456'
+        }
+    }
+
     namespace = "com.example.saveapp"
     compileSdkVersion 34  // Setze auf die neuste SDK-Version
     ndkVersion "23.1.7779620"  // Du kannst es anpassen oder weglassen
@@ -47,9 +56,9 @@ android {
 
     buildTypes {
         release {
+            signingConfig signingConfigs.release
             minifyEnabled false  // Minify kann für Debugging deaktiviert sein
-            //signingConfig signingConfigs.debug  // Deaktivieren, falls nicht erforderlich
-             shrinkResources false  // Deaktiviert die Ressourcenschrumpfung       
+            shrinkResources false  // Deaktiviert die Ressourcenschrumpfung
         }
     }
 }
