@@ -1,25 +1,20 @@
 import 'dart:io';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:saveapp/galerie_manager/thumbnail_manager.dart';
-import 'package:saveapp/galerie_manager/load_save_process.dart';
 import 'package:saveapp/galerie_manager/photo_view_navigation.dart';
 import '../logik/file_manager.dart';
 import 'package:saveapp/galerie_manager/fotos_loeschen_exportieren.dart';
-
+import '../galerie_manager/bilder_anzeig_logik.dart';
 class GalerieScreen extends StatefulWidget {
   const GalerieScreen({super.key});
 
   @override
-  GalerieScreenState createState() => GalerieScreenState();
+  State<GalerieScreen> createState() => _GalerieScreenState();
 }
 
-class GalerieScreenState extends State<GalerieScreen> {
+class _GalerieScreenState extends State<GalerieScreen> {
   List<File> _importedPhotos = [];
-  final ValueNotifier<List<File>> _selectedPhotos = ValueNotifier<List<File>>([]); // Benutze ValueNotifier
+  final List<File> _selectedPhotos = [];
   bool _isPickerActive = false;
-  bool _isSelectionMode = false; // Status für Auswahlmodus
-  final GalerieManager _galerieManager = GalerieManager();
 
   @override
   void initState() {
@@ -28,36 +23,55 @@ class GalerieScreenState extends State<GalerieScreen> {
   }
 
   Future<void> _loadPhotos() async {
-    final files = await _galerieManager.loadPhotos();
+    final files = await FileManager.loadPhotos();
     setState(() {
       _importedPhotos = files;
     });
-
-    if (kDebugMode) {
-      print('Geladene Fotos: $_importedPhotos');
-    }
   }
 
-  // Foto zur Auswahlliste hinzufügen oder entfernen
   void _togglePhotoSelection(File file) {
-    if (_selectedPhotos.value.contains(file)) {
-      _selectedPhotos.value = List.from(_selectedPhotos.value)..remove(file);
-    } else {
-      _selectedPhotos.value = List.from(_selectedPhotos.value)..add(file);
+    setState(() {
+      if (_selectedPhotos.contains(file)) {
+        _selectedPhotos.remove(file);
+      } else {
+        _selectedPhotos.add(file);
+      }
+    });
+  }
+
+  Future<void> _importPhotos() async {
+    if (_isPickerActive) return;
+
+    setState(() {
+      _isPickerActive = true;
+    });
+
+    try {
+      await FileManager.importPhotos(context, (newPhotos) {
+        setState(() {
+          _importedPhotos.addAll(newPhotos);
+        });
+      });
+    } finally {
+      setState(() {
+        _isPickerActive = false;
+      });
     }
-    _isSelectionMode = _selectedPhotos.value.isNotEmpty;
   }
 
-  // Auswahl zurücksetzen
-  void _clearSelection() {
-    _selectedPhotos.value = [];
-    _isSelectionMode = false;
+  Future<void> _deleteSelectedPhotos() async {
+    await FotoBearbeiten.fotosLoeschenMitBestaetigung(_selectedPhotos, context);
+    await _loadPhotos();
+    setState(() {
+      _selectedPhotos.clear();
+    });
   }
 
-  // Galerie aktualisieren, nachdem Fotos gelöscht oder exportiert wurden
-  Future<void> _updateGallery() async {
-    await _loadPhotos(); // Lade die Galerie neu
-    _clearSelection(); // Setze die Auswahl zurück
+  Future<void> _exportSelectedPhotos() async {
+    await FotoBearbeiten.fotosExportierenMitBestaetigung(_selectedPhotos, context);
+    setState(() {
+      _selectedPhotos.clear();
+    });
   }
 
   @override
@@ -68,36 +82,16 @@ class GalerieScreenState extends State<GalerieScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.add),
-            onPressed: () async {
-              if (_isPickerActive) return;
-              setState(() {
-                _isPickerActive = true;
-              });
-
-              try {
-                await FileManager.importPhotos(context, (files) {
-                  setState(() {
-                    _importedPhotos.addAll(files);
-                  });
-                  if (kDebugMode) {
-                    print('Fotos erfolgreich importiert und zur Galerie hinzugefügt: ${_importedPhotos.length}');
-                  }
-                });
-              } finally {
-                setState(() {
-                  _isPickerActive = false;
-                });
-              }
-            },
+            onPressed: _importPhotos,
           ),
         ],
       ),
-      body: Stack(
-        children: [
-          _importedPhotos.isEmpty
-              ? const Center(child: Text('Keine Fotos verfügbar'))
-              : GridView.builder(
-                  padding: const EdgeInsets.all(8.0), // Einheitliches Padding
+      body: _importedPhotos.isEmpty
+          ? const Center(child: Text('Keine Fotos verfügbar'))
+          : Stack(
+              children: [
+                GridView.builder(
+                  padding: const EdgeInsets.all(8.0),
                   gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: 3,
                     crossAxisSpacing: 8.0,
@@ -106,81 +100,73 @@ class GalerieScreenState extends State<GalerieScreen> {
                   itemCount: _importedPhotos.length,
                   itemBuilder: (context, index) {
                     final file = _importedPhotos[index];
+                    final isSelected = _selectedPhotos.contains(file);
 
-                    return ValueListenableBuilder<List<File>>(
-                      valueListenable: _selectedPhotos,
-                      builder: (context, selectedPhotos, child) {
-                        return GestureDetector(
-                          onLongPress: () => _togglePhotoSelection(file), // Auswahl ein-/ausschalten
-                          onTap: () async {
-                            if (_isSelectionMode) {
-                              _togglePhotoSelection(file); // Auswahlmodus aktivieren
-                            } else {
-                              final result = await PhotoViewNavigation.navigateToPhotoView(
-                                context,
-                                _importedPhotos,
-                                index,
-                              );
-                              if (result == true) {
-                                await _loadPhotos();
-                              }
-                            }
-                          },
-                          child: Container(
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(8.0),
-                              border: selectedPhotos.contains(file)
-                                  ? Border.all(color: Colors.blue, width: 2)
-                                  : null, // Rahmen für ausgewählte Fotos
-                            ),
-                            child: Stack(
-                              children: [
-                                ImageHelper.buildImage(file, context),
-                                if (selectedPhotos.contains(file))
-                                  const Positioned(
-                                    top: 0,
-                                    right: 0,
-                                    child: Icon(
-                                      Icons.check_circle,
-                                      color: Colors.blue,
-                                    ),
-                                  ),
-                              ],
-                            ),
-                          ),
-                        );
+                    return GestureDetector(
+                      onLongPress: () => _togglePhotoSelection(file),
+                      onTap: () async {
+                        if (_selectedPhotos.isNotEmpty) {
+                          _togglePhotoSelection(file);
+                        } else {
+                          final result = await PhotoViewNavigation.navigateToPhotoView(
+                            context,
+                            _importedPhotos,
+                            index,
+                          );
+                          if (result == true) {
+                            await _loadPhotos();
+                          }
+                        }
                       },
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(8.0),
+                          border: isSelected
+                              ? Border.all(color: Colors.blue, width: 2)
+                              : null,
+                        ),
+                        child: Stack(
+                          children: [
+                            Center(
+                              child: ImageHelper.buildImage(file, context),
+                            ),
+                            if (isSelected)
+                              const Positioned(
+                                top: 0,
+                                right: 0,
+                                child: Icon(
+                                  Icons.check_circle,
+                                  color: Colors.blue,
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
                     );
                   },
                 ),
-          if (_isSelectionMode)
-            Positioned(
-              bottom: 10,
-              left: 20,
-              right: 20,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.delete, color: Colors.red, size: 30),
-                    onPressed: () async {
-                      await FotoBearbeiten.fotosLoeschenMitBestaetigung(_selectedPhotos.value, context);
-                      await _updateGallery(); // Galerie nach dem Löschen aktualisieren
-                    },
+                if (_selectedPhotos.isNotEmpty)
+                  Positioned(
+                    bottom: 10,
+                    left: 20,
+                    right: 20,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.delete, color: Colors.red, size: 30),
+                          onPressed: _deleteSelectedPhotos,
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.file_upload, color: Colors.blue, size: 30),
+                          onPressed: _exportSelectedPhotos,
+                        ),
+                      ],
+                    ),
                   ),
-                  IconButton(
-                    icon: const Icon(Icons.file_upload, color: Colors.blue, size: 30),
-                    onPressed: () async {
-                      await FotoBearbeiten.fotosExportierenMitBestaetigung(_selectedPhotos.value, context);
-                      await _updateGallery(); // Galerie nach dem Export aktualisieren
-                    },
-                  ),
-                ],
-              ),
+              ],
             ),
-        ],
-      ),
     );
   }
 }
