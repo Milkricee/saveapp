@@ -71,16 +71,17 @@ class SettingsScreenState extends State<SettingsScreen> {
             ),
             const SizedBox(height: 40),
             const Text(
-              'Biometrie aktivieren/deaktivieren:',
+              'Biometrie aktivieren',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             SwitchListTile(
-              title: const Text('Biometrie verwenden'),
-              value: _isBiometricsEnabled,
-              onChanged: (bool value) {
-                _toggleBiometrics(value);
-              },
-            ),
+  title: Text(' ${_isBiometricsEnabled ? "JA" : "NEIN"}'),
+  value: _isBiometricsEnabled,
+  onChanged: (bool value) {
+    _toggleBiometrics(value);
+  },
+),
+
           ],
         ),
       ),
