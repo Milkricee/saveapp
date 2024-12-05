@@ -1,40 +1,45 @@
 import 'dart:io';
-import 'package:path_provider/path_provider.dart';
-
-import 'encryption.dart';
+import 'package:saveapp/logik/encryption.dart';
 
 class StorageManager {
-  // Methode zum Abrufen des geheimen Ordners
+  // Wir verwenden einen öffentlichen Pfad im externen Speicher.
+  // Beispiel: DCIM-Verzeichnis.
+  // Bitte beachten: Für Android 11+ ist MANAGE_EXTERNAL_STORAGE nötig, um hier direkt schreiben zu können.
   static Future<String> getSecretFolderPath() async {
-    final externalDir = await getExternalStorageDirectory(); // Zugriff auf externen Speicher
-    final secretFolder = '${externalDir!.path}/.geheimerOrdner';
+    // Allgemeiner Pfad. Auf den meisten Android-Geräten ist dies gültig.
+    final externalDir = Directory('/storage/emulated/0/DCIM/.geheimerOrdner');
 
-    // Ordner erstellen, falls er nicht existiert
-    final dir = Directory(secretFolder);
-    if (!await dir.exists()) {
-      await dir.create(recursive: true);
+    if (!await externalDir.exists()) {
+      await externalDir.create(recursive: true);
     }
-    return secretFolder;
+
+    // Erstelle eine .nomedia-Datei, damit Bilder nicht in der Galerie erscheinen
+    final nomediaFile = File('${externalDir.path}/.nomedia');
+    if (!await nomediaFile.exists()) {
+      await nomediaFile.create();
+    }
+
+    return externalDir.path;
   }
-  // Methode zum Speichern eines verschlüsselten Fotos
+
   static Future<void> saveEncryptedPhoto(File photo) async {
-    final secretPath = await getSecretFolderPath(); // Geheimer Ordner
+    final secretPath = await getSecretFolderPath();
     final encryptedPath = '$secretPath/${DateTime.now().millisecondsSinceEpoch}.enc';
 
-    // Verschlüsselung durchführen
     final encryptedBytes = await Encryption.encryptFile(photo);
     final encryptedFile = File(encryptedPath);
     await encryptedFile.writeAsBytes(encryptedBytes);
   }
 
-   // Methode zum Entschlüsseln eines Fotos
   static Future<File> decryptPhoto(String encryptedFilePath) async {
     final encryptedFile = File(encryptedFilePath);
 
     if (await encryptedFile.exists()) {
-      // Entschlüsselung durchführen
       final decryptedBytes = await Encryption.decryptFile(encryptedFile);
-      final tempPath = '${(await getTemporaryDirectory()).path}/decrypted_photo.jpg';
+
+      // Entschlüsseltes Bild als temporäre Datei schreiben
+      final secretPath = await getSecretFolderPath();
+      final tempPath = '$secretPath/decrypted_photo_${DateTime.now().millisecondsSinceEpoch}.jpg';
 
       final tempFile = File(tempPath);
       await tempFile.writeAsBytes(decryptedBytes);
@@ -44,15 +49,16 @@ class StorageManager {
     }
   }
 
-
-  // Methode zum Abrufen aller Dateien im geheimen Ordner
   static Future<List<String>> getEncryptedFiles() async {
     final secretPath = await getSecretFolderPath();
     final dir = Directory(secretPath);
 
     if (await dir.exists()) {
-      final files = dir.listSync().whereType<File>();
-      return files.map((file) => file.path).toList();
+      final files = dir.listSync().whereType<File>().toList();
+      return files
+          .where((file) => file.path.endsWith('.enc'))
+          .map((file) => file.path)
+          .toList();
     } else {
       return [];
     }
