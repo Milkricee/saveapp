@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:saveapp/screens/change_password_screen.dart';
 import 'package:saveapp/logik/biometrie.dart';
+import 'settings_manager.dart'; // Importiere den SettingsManager
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -11,13 +12,14 @@ class SettingsScreen extends StatefulWidget {
 
 class SettingsScreenState extends State<SettingsScreen> {
   bool _isBiometricsEnabled = false;
-  bool _deleteAfterImport = false; // Neuer Status für den zusätzlichen Schalter
+  bool _deleteAfterImport = false; // Status für automatisches Löschen nach Import
   final BiometrieManager _biometrieManager = BiometrieManager();
 
   @override
   void initState() {
     super.initState();
     _loadBiometricsStatus();
+    _loadDeleteAfterImportStatus(); // Ladet den aktuellen Status aus SettingsManager
   }
 
   Future<void> _loadBiometricsStatus() async {
@@ -29,12 +31,22 @@ class SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
+  Future<void> _loadDeleteAfterImportStatus() async {
+    bool value = await SettingsManager.getDeleteAfterImport();
+    if (mounted) {
+      setState(() {
+        _deleteAfterImport = value;
+      });
+    }
+  }
+
   Future<void> _toggleBiometrics(bool value) async {
     if (value) {
       await _biometrieManager.setBiometricsEnabled(true);
     } else {
       await _biometrieManager.setBiometricsEnabled(false);
     }
+
     if (mounted) {
       setState(() {
         _isBiometricsEnabled = value;
@@ -45,12 +57,12 @@ class SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
-  // Schalter-Handler für das automatische Löschen beim Import
-  void _toggleDeleteAfterImport(bool value) {
+  Future<void> _toggleDeleteAfterImport(bool value) async {
     setState(() {
       _deleteAfterImport = value;
     });
-    // Spätere Logik wird hier implementiert
+    await SettingsManager.setDeleteAfterImport(value);
+    // Hier kannst du später weitere Aktionen oder Meldungen einbauen
   }
 
   @override
@@ -98,7 +110,9 @@ class SettingsScreenState extends State<SettingsScreen> {
             SwitchListTile(
               title: Text(_deleteAfterImport ? 'JA' : 'NEIN'),
               value: _deleteAfterImport,
-              onChanged: _toggleDeleteAfterImport,
+              onChanged: (bool value) {
+                _toggleDeleteAfterImport(value);
+              },
             ),
           ],
         ),

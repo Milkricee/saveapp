@@ -6,6 +6,8 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:saveapp/logik/encryption.dart';
 import 'dart:typed_data';
 
+import '../screens/settings_manager.dart';
+
 class FileManager {
   // Statusvariable, um den mehrfachen Aufruf zu verhindern
   static bool _isPickerActive = false;
@@ -37,6 +39,9 @@ class FileManager {
       final picker = ImagePicker();
       final pickedFiles = await picker.pickMultiImage(); // Mehrfachauswahl
 
+      // Lade den Status des automatischen Löschens aus den Einstellungen
+      bool deleteAfterImport = await SettingsManager.getDeleteAfterImport();
+
       if (pickedFiles.isNotEmpty) {
         final localPath = await getLocalPath();
         List<File> encryptedFiles = [];
@@ -57,12 +62,31 @@ class FileManager {
           await encryptedFile.writeAsBytes(encryptedBytes);
 
           encryptedFiles.add(encryptedFile);
+
+          // Wenn der automatische Löschmodus aktiviert ist, lösche das Originalfoto
+          if (deleteAfterImport) {
+            try {
+              if (await photoFile.exists()) {
+                await photoFile.delete();
+              }
+            } catch (e) {
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Fehler beim Löschen des Originalfotos: ${photoFile.path}')),
+                );
+              }
+            }
+          }
         }
 
         if (!context.mounted) return; // mounted check
 
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('${encryptedFiles.length} Foto(s) erfolgreich importiert und verschlüsselt!')),
+          SnackBar(
+            content: Text(
+              '${encryptedFiles.length} Foto(s) erfolgreich importiert, verschlüsselt${deleteAfterImport ? " und Originale gelöscht" : ""}!'
+            ),
+          ),
         );
         onPhotosImported(encryptedFiles);
       }
@@ -146,24 +170,22 @@ class FileManager {
   }
 
   // Fotos aus dem lokalen Verzeichnis laden
-static Future<List<File>> loadPhotos() async {
-  final localPath = await getLocalPath();
-  final photoDirectory = Directory(localPath);
+  static Future<List<File>> loadPhotos() async {
+    final localPath = await getLocalPath();
+    final photoDirectory = Directory(localPath);
 
-  if (!photoDirectory.existsSync()) {
-    photoDirectory.createSync(); // Erstelle das Verzeichnis, falls es nicht existiert
+    if (!photoDirectory.existsSync()) {
+      photoDirectory.createSync(); // Erstelle das Verzeichnis, falls es nicht existiert
+    }
+
+    // Lade alle Dateien mit den Endungen .jpg, .png oder .enc
+    return photoDirectory
+        .listSync()
+        .whereType<File>()
+        .where((file) =>
+            file.path.endsWith('.jpg') ||
+            file.path.endsWith('.png') ||
+            file.path.endsWith('.enc'))
+        .toList();
   }
-
-  // Lade alle Dateien mit den Endungen .jpg, .png oder .enc
-  return photoDirectory
-      .listSync()
-      .whereType<File>()
-      .where((file) =>
-          file.path.endsWith('.jpg') ||
-          file.path.endsWith('.png') ||
-          file.path.endsWith('.enc')) // Verschlüsselte Fotos
-      .toList();
 }
-
-}
-
