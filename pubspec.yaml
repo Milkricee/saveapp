@@ -22,6 +22,7 @@ dependencies:
   shared_preferences: ^2.0.15
   file_selector: ^1.0.3
   document_file_save_plus: ^2.0.0
+  file_picker: ^8.1.4
   
 dev_dependencies:  
   flutter_test:

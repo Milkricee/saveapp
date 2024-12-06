@@ -95,7 +95,7 @@ class _GalerieScreenState extends State<GalerieScreen> {
   }
 
   Future<void> _exportSelectedPhotos() async {
-    await FotoBearbeiten.fotosExportierenMitBestaetigung(_selectedPhotos, context);
+    await FotoBearbeiten.fotosExportierenMitPfadauswahl(_selectedPhotos, context);
     setState(() {
       _selectedPhotos.clear();
     });
