@@ -4,7 +4,7 @@ import 'package:saveapp/screens/animated_image_switcher.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:saveapp/logik/password_manager.dart';
 import 'package:saveapp/logik/biometrie.dart';
-import 'home.dart';
+import 'transition_screen.dart'; // Importiere den TransitionScreen
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -64,7 +64,7 @@ class LoginPageState extends State<LoginPage> {
         if (!mounted) return;
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => const HomeScreen()),
+          MaterialPageRoute(builder: (context) => const TransitionScreen()), // Zu TransitionScreen navigieren
         );
       } else {
         if (kDebugMode) {
@@ -74,20 +74,20 @@ class LoginPageState extends State<LoginPage> {
     }
   }
 
-  Future<void> _verifyPassword() async {
-    bool isValid = await PasswordManager.verifyPassword(_password);
-    if (!mounted) return;
-    if (isValid) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const HomeScreen()),
-      );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Falsches Passwort!')),
-      );
-    }
+Future<void> _verifyPassword() async {
+  bool isValid = await PasswordManager.verifyPassword(_password);
+  if (!mounted) return;
+  if (isValid) {
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (context) => const TransitionScreen()), // Zu TransitionScreen navigieren
+    );
+  } else {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Falsches Passwort!')),
+    );
   }
+}
 
   Future<void> _setNewPassword() async {
     if (_password == _confirmPassword) {
@@ -105,29 +105,19 @@ class LoginPageState extends State<LoginPage> {
   }
 
   Future<void> _handleBiometricLogin() async {
-    if (kDebugMode) {
-      print('Handling biometric login');
-    }
-    bool authenticated = await _biometrieManager.authenticateWithBiometrics();
-    if (!mounted) return;
-    if (authenticated) {
-      if (kDebugMode) {
-        print('Biometric login successful');
-      }
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const HomeScreen()),
-      );
-    } else {
-      if (kDebugMode) {
-        print('Biometric login failed');
-      }
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Biometrische Authentifizierung fehlgeschlagen!')),
-      );
-    }
+  bool authenticated = await _biometrieManager.authenticateWithBiometrics();
+  if (!mounted) return;
+  if (authenticated) {
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (context) => const TransitionScreen()), // Zu TransitionScreen navigieren
+    );
+  } else {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Biometrische Authentifizierung fehlgeschlagen!')),
+    );
   }
-
+}
   Future<void> _launchPaypal() async {
     const url = 'https://paypal.me/miedrei?country.x=DE&locale.x=de_DE';
     final Uri paypalUri = Uri.parse(url);

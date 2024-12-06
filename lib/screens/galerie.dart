@@ -1,9 +1,12 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:saveapp/galerie_manager/photo_view_navigation.dart';
+import '../logik/directory_selector.dart';
 import '../logik/file_manager.dart';
 import 'package:saveapp/galerie_manager/fotos_loeschen_exportieren.dart';
 import '../galerie_manager/bilder_anzeig_logik.dart';
+import 'settings_manager.dart';
+
 class GalerieScreen extends StatefulWidget {
   const GalerieScreen({super.key});
 
@@ -19,14 +22,52 @@ class _GalerieScreenState extends State<GalerieScreen> {
   @override
   void initState() {
     super.initState();
-    _loadPhotos();
+    _checkPermissionsAndLoadPhotos();
+  }
+
+  /// Prüft die Berechtigungen und lädt Fotos.
+  Future<void> _checkPermissionsAndLoadPhotos() async {
+    // Prüfe und fordere Berechtigungen an.
+    bool permissionsGranted = await FileManager.checkAndRequestPermissions();
+    if (!permissionsGranted) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Speicherzugriff verweigert!')),
+      );
+      return;
+    }
+
+    // Prüfe, ob ein Zielordner festgelegt ist.
+    final customPath = await SettingsManager.getDirectoryPath();
+    if (customPath == null || customPath.isEmpty) {
+      final selectedPath = await DirectorySelector.selectDirectory();
+      if (selectedPath == null || selectedPath.isEmpty) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Kein Zielordner ausgewählt! Bitte wählen Sie einen Ordner aus.')),
+        );
+        return;
+      }
+      await SettingsManager.setDirectoryPath(selectedPath);
+    }
+
+    // Lade Fotos aus dem Zielordner.
+    await _loadPhotos();
   }
 
   Future<void> _loadPhotos() async {
-    final files = await FileManager.loadPhotos();
-    setState(() {
-      _importedPhotos = files;
-    });
+    try {
+      final files = await FileManager.loadPhotos();
+      setState(() {
+        _importedPhotos = files;
+      });
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Fehler beim Laden der Fotos: $e')),
+        );
+      }
+    }
   }
 
   void _togglePhotoSelection(File file) {

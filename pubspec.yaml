@@ -20,7 +20,8 @@ dependencies:
   url_launcher: ^6.0.20
   fluttertoast: ^8.0.8
   shared_preferences: ^2.0.15
-  file_selector: ^0.9.0
+  file_selector: ^1.0.3
+  document_file_save_plus: ^2.0.0
   
 dev_dependencies:  
   flutter_test:

@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:saveapp/screens/login_page.dart';
-import 'package:permission_handler/permission_handler.dart';
-import 'dart:io';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
@@ -23,7 +21,6 @@ class SaveAppState extends State<SaveApp> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    _requestAllStoragePermissions();
   }
 
   @override
@@ -32,47 +29,6 @@ class SaveAppState extends State<SaveApp> with WidgetsBindingObserver {
     super.dispose();
   }
 
-Future<void> _requestAllStoragePermissions() async {
-  // Erst normale Speicherberechtigung anfragen
-  var status = await Permission.storage.request();
-
-  if (status.isGranted) {
-    // Unter Android 11+ könnte trotzdem ein eingeschränkter Zugriff vorliegen.
-    // Wir prüfen, ob MANAGE_EXTERNAL_STORAGE verfügbar ist:
-    if (Platform.isAndroid) {
-      // Prüfen ob MANAGE_EXTERNAL_STORAGE nötig ist:
-      // Ab Android 11 (API 30) ist das relevant.
-      var manageStorageStatus = await Permission.manageExternalStorage.request();
-
-      // Wir warten einen Frame, um sicherzustellen, dass der Build-Prozess abgeschlossen ist,
-      // bevor wir eine SnackBar anzeigen.
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (manageStorageStatus.isGranted) {
-          ScaffoldMessenger.of(navigatorKey.currentState!.context).showSnackBar(
-            const SnackBar(content: Text('Voller Speicherzugriff erteilt!')),
-          );
-        } else {
-          ScaffoldMessenger.of(navigatorKey.currentState!.context).showSnackBar(
-            const SnackBar(content: Text('Eingeschränkter Speicherzugriff. Bitte alle Dateien zulassen.')),
-          );
-        }
-      });
-    } else {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        ScaffoldMessenger.of(navigatorKey.currentState!.context).showSnackBar(
-          const SnackBar(content: Text('Speicherzugriff erteilt!')),
-        );
-      });
-    }
-  } else {
-    // Hier könntest du eine Meldung anzeigen, dass ohne Berechtigungen nichts geht.
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      ScaffoldMessenger.of(navigatorKey.currentState!.context).showSnackBar(
-        const SnackBar(content: Text('Speicherzugriff verweigert! Bitte Berechtigungen in den Einstellungen erlauben.')),
-      );
-    });
-  }
-}
 
 
   @override
