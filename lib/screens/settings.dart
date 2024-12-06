@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:saveapp/screens/change_password_screen.dart';
 import 'package:saveapp/logik/biometrie.dart';
-import 'settings_manager.dart'; // Importiere den SettingsManager
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -12,14 +11,13 @@ class SettingsScreen extends StatefulWidget {
 
 class SettingsScreenState extends State<SettingsScreen> {
   bool _isBiometricsEnabled = false;
-  bool _deleteAfterImport = false; // Status für automatisches Löschen nach Import
   final BiometrieManager _biometrieManager = BiometrieManager();
 
   @override
   void initState() {
     super.initState();
     _loadBiometricsStatus();
-    _loadDeleteAfterImportStatus(); // Ladet den aktuellen Status aus SettingsManager
+    _loadDeleteAfterImportStatus(); // Lade den aktuellen Status aus dem SettingsManager
   }
 
   Future<void> _loadBiometricsStatus() async {
@@ -32,10 +30,8 @@ class SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _loadDeleteAfterImportStatus() async {
-    bool value = await SettingsManager.getDeleteAfterImport();
     if (mounted) {
       setState(() {
-        _deleteAfterImport = value;
       });
     }
   }
@@ -55,14 +51,6 @@ class SettingsScreenState extends State<SettingsScreen> {
         SnackBar(content: Text('Biometrie wurde ${_isBiometricsEnabled ? "aktiviert" : "deaktiviert"}.')),
       );
     }
-  }
-
-  Future<void> _toggleDeleteAfterImport(bool value) async {
-    setState(() {
-      _deleteAfterImport = value;
-    });
-    await SettingsManager.setDeleteAfterImport(value);
-    // Hier kannst du später weitere Aktionen oder Meldungen einbauen
   }
 
   @override
@@ -100,18 +88,6 @@ class SettingsScreenState extends State<SettingsScreen> {
               value: _isBiometricsEnabled,
               onChanged: (bool value) {
                 _toggleBiometrics(value);
-              },
-            ),
-            const SizedBox(height: 40),
-            const Text(
-              'Beim Importieren Fotos automatisch löschen?',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            SwitchListTile(
-              title: Text(_deleteAfterImport ? 'JA' : 'NEIN'),
-              value: _deleteAfterImport,
-              onChanged: (bool value) {
-                _toggleDeleteAfterImport(value);
               },
             ),
           ],
