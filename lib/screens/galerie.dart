@@ -5,7 +5,6 @@ import '../logik/directory_selector.dart';
 import '../logik/file_manager.dart';
 import 'package:saveapp/galerie_manager/fotos_loeschen_exportieren.dart';
 import '../galerie_manager/bilder_anzeig_logik.dart';
-import 'settings_manager.dart';
 
 class GalerieScreen extends StatefulWidget {
   const GalerieScreen({super.key});
@@ -22,37 +21,24 @@ class _GalerieScreenState extends State<GalerieScreen> {
   @override
   void initState() {
     super.initState();
-    _checkPermissionsAndLoadPhotos();
+    _initializeGallery();
   }
 
-  /// Prüft die Berechtigungen und lädt Fotos.
-  Future<void> _checkPermissionsAndLoadPhotos() async {
-    // Prüfe und fordere Berechtigungen an.
-    bool permissionsGranted = await FileManager.checkAndRequestPermissions();
-    if (!permissionsGranted) {
+  /// Initialisiert die Galerie, indem der geheime Ordner erstellt und Fotos geladen werden.
+  Future<void> _initializeGallery() async {
+    try {
+      // Automatisch den geheimen Ordner erstellen
+      final secretFolderPath = await DirectorySelector.createSecretFolder();
+      debugPrint('Geheimer Ordner erstellt: $secretFolderPath');
+
+      // Lade Fotos aus dem geheimen Ordner
+      await _loadPhotos();
+    } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Speicherzugriff verweigert!')),
+        SnackBar(content: Text('Fehler bei der Galerieinitialisierung: $e')),
       );
-      return;
     }
-
-    // Prüfe, ob ein Zielordner festgelegt ist.
-    final customPath = await SettingsManager.getDirectoryPath();
-    if (customPath == null || customPath.isEmpty) {
-      final selectedPath = await DirectorySelector.selectDirectory();
-      if (selectedPath == null || selectedPath.isEmpty) {
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Kein Zielordner ausgewählt! Bitte wählen Sie einen Ordner aus.')),
-        );
-        return;
-      }
-      await SettingsManager.setDirectoryPath(selectedPath);
-    }
-
-    // Lade Fotos aus dem Zielordner.
-    await _loadPhotos();
   }
 
   Future<void> _loadPhotos() async {

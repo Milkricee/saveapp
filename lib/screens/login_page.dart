@@ -1,10 +1,10 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:saveapp/screens/animated_image_switcher.dart';
+import 'package:saveapp/screens/home.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:saveapp/logik/password_manager.dart';
 import 'package:saveapp/logik/biometrie.dart';
-import 'transition_screen.dart'; // Importiere den TransitionScreen
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -64,7 +64,7 @@ class LoginPageState extends State<LoginPage> {
         if (!mounted) return;
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => const TransitionScreen()), // Zu TransitionScreen navigieren
+          MaterialPageRoute(builder: (context) => const HomeScreen()), // Zu TransitionScreen navigieren
         );
       } else {
         if (kDebugMode) {
@@ -80,7 +80,7 @@ Future<void> _verifyPassword() async {
   if (isValid) {
     Navigator.pushReplacement(
       context,
-      MaterialPageRoute(builder: (context) => const TransitionScreen()), // Zu TransitionScreen navigieren
+      MaterialPageRoute(builder: (context) => const HomeScreen()), // Zu TransitionScreen navigieren
     );
   } else {
     ScaffoldMessenger.of(context).showSnackBar(
@@ -110,7 +110,7 @@ Future<void> _verifyPassword() async {
   if (authenticated) {
     Navigator.pushReplacement(
       context,
-      MaterialPageRoute(builder: (context) => const TransitionScreen()), // Zu TransitionScreen navigieren
+      MaterialPageRoute(builder: (context) => const HomeScreen()), // Zu TransitionScreen navigieren
     );
   } else {
     ScaffoldMessenger.of(context).showSnackBar(

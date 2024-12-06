@@ -3,6 +3,7 @@ import 'package:file_selector/file_selector.dart'; // SAF-Unterstützung
 import '../screens/settings_manager.dart';
 import 'package:path_provider/path_provider.dart';
 
+
 class GalerieManager {
   Future<List<File>> loadPhotos() async {
     // Lade den benutzerdefinierten Ordnerpfad

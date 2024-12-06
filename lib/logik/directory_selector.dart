@@ -1,19 +1,36 @@
-import 'package:file_selector/file_selector.dart'; // Stellt getDirectoryPath() bereit
+import 'dart:io';
+import 'package:path_provider/path_provider.dart'; // Für Zugriff auf öffentliche Verzeichnisse
 import '../screens/settings_manager.dart'; // Pfad zum SettingsManager anpassen, falls nötig
 
 class DirectorySelector {
-  /// Öffnet den Ordner-Auswahldialog des Systems (SAF auf Android) und gibt den gewählten Pfad zurück.
-  /// Gibt `null` zurück, wenn der Nutzer den Dialog abbricht.
-  static Future<String?> selectDirectory() async {
-    // Ruft den nativen Ordnerpicker auf.
-    final selectedDirectory = await getDirectoryPath(); // Diese Funktion kommt aus file_selector
+  /// Erstellt automatisch einen geheimen Ordner im öffentlichen Verzeichnis (z. B. Dokumente).
+  /// Gibt den Pfad des erstellten Ordners zurück.
+  static Future<String> createSecretFolder() async {
+    // Hole das öffentliche Dokumentenverzeichnis
+    final directory = await getExternalStorageDirectory();
 
-    // Wenn ein Ordner gewählt wurde, speichere den Pfad.
-    if (selectedDirectory != null && selectedDirectory.isNotEmpty) {
-      await SettingsManager.setDirectoryPath(selectedDirectory);
+    if (directory == null) {
+      throw Exception("Externer Speicher ist nicht verfügbar");
     }
 
-    return selectedDirectory;
+    // Erstelle einen Unterordner für die App
+    final secretFolderPath = "${directory.path}/MySecretVault";
+    final secretFolder = Directory(secretFolderPath);
+
+    if (!await secretFolder.exists()) {
+      await secretFolder.create(recursive: true);
+    }
+
+    // Speichere den Pfad im SettingsManager
+    await SettingsManager.setDirectoryPath(secretFolderPath);
+
+    // Sicherstellen, dass eine .nomedia-Datei existiert
+    final nomediaFile = File('$secretFolderPath/.nomedia');
+    if (!await nomediaFile.exists()) {
+      await nomediaFile.create();
+    }
+
+    return secretFolderPath;
   }
 
   /// Lädt den zuvor gespeicherten Ordnerpfad aus den Einstellungen.
