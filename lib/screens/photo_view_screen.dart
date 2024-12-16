@@ -63,36 +63,39 @@ class PhotoViewScreen extends StatelessWidget {
                 IconButton(
                   icon: const Icon(Icons.delete, color: Colors.red, size: 30),
                   onPressed: () async {
-                    // Regulares Löschen - mit Bestätigung
-                    await FotoBearbeiten.fotosLoeschenMitBestaetigung([imageFiles[initialIndex]], context);
-                    if (!context.mounted) return; // mounted check
+                    // Löschen mit Bestätigung
+                    await FotoBearbeiten.fotosLoeschenMitBestaetigung(
+                      [imageFiles[initialIndex]],
+                      context,
+                    );
+                    if (!context.mounted) return;
                     Navigator.pop(context, true); // Galerie neu laden nach Löschen
                   },
                 ),
-                IconButton(
-                  icon: const Icon(Icons.file_upload, color: Colors.blue, size: 30),
-                  onPressed: () async {
-                    // Exportieren des Fotos
-                    bool? exportConfirmed = await FotoBearbeiten.confirmDialog(
-                      context,
-                      'Export bestätigen',
-                      'Möchten Sie wirklich das Foto exportieren?',
-                    );
+          IconButton(
+  icon: const Icon(Icons.file_upload, color: Colors.blue, size: 30),
+  onPressed: () async {
+    // Konsistenter Exportprozess mit Pfadauswahl
+    final success = await FotoBearbeiten.fotosExportierenMitPfadauswahl(
+      [imageFiles[initialIndex]],
+      context,
+    );
 
-                    if (exportConfirmed != true) {
-                      return; // Falls Abbrechen gedrückt wurde, beenden
-                    }
-                    if (!context.mounted) return; // mounted check
-                    await FotoBearbeiten.fotosExportierenOhneBestaetigung([imageFiles[initialIndex]], context);                
-                      if (!context.mounted) return; // mounted check
-                      // Löschen ohne erneute Bestätigung
-                      await FotoBearbeiten.fotosLoeschenMitBestaetigung([imageFiles[initialIndex]], context);
-                    
+    if (!context.mounted) return; // Überprüfen, ob das Widget noch aktiv ist
 
-                    if (!context.mounted) return; // mounted check
-                    Navigator.pop(context, true); // Galerie neu laden nach Export und optionalem Löschen
-                  },
-                ),
+    // Optionales Löschen nach dem Export
+    if (success) {
+      await FotoBearbeiten.fotosLoeschenMitBestaetigung(
+        [imageFiles[initialIndex]],
+        context,
+      );
+
+      if (!context.mounted) return; // Noch einmal prüfen vor dem Navigator.pop
+      Navigator.pop(context, true); // Galerie neu laden nach Export und Löschen
+    }
+  },
+),
+
               ],
             ),
           ),
