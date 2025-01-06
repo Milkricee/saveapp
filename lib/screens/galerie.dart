@@ -3,8 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:saveapp/galerie_manager/photo_view_navigation.dart';
 import '../logik/directory_selector.dart';
 import '../logik/file_manager.dart';
-import 'package:saveapp/galerie_manager/fotos_loeschen_exportieren.dart';
 import '../galerie_manager/bilder_anzeig_logik.dart';
+import 'package:saveapp/galerie_manager/fotos_loeschen_exportieren.dart';
 
 class GalerieScreen extends StatefulWidget {
   const GalerieScreen({super.key});
@@ -94,13 +94,6 @@ class _GalerieScreenState extends State<GalerieScreen> {
     });
   }
 
-  Future<void> _exportSelectedPhotos() async {
-    await FotoBearbeiten.fotosExportierenMitPfadauswahl(_selectedPhotos, context);
-    setState(() {
-      _selectedPhotos.clear();
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -135,7 +128,8 @@ class _GalerieScreenState extends State<GalerieScreen> {
                         if (_selectedPhotos.isNotEmpty) {
                           _togglePhotoSelection(file);
                         } else {
-                          final result = await PhotoViewNavigation.navigateToPhotoView(
+                          final result =
+                              await PhotoViewNavigation.navigateToPhotoView(
                             context,
                             _importedPhotos,
                             index,
@@ -182,13 +176,11 @@ class _GalerieScreenState extends State<GalerieScreen> {
                       mainAxisAlignment: MainAxisAlignment.spaceAround,
                       children: [
                         IconButton(
-                          icon: const Icon(Icons.delete, color: Colors.red, size: 30),
+                          icon: const Icon(Icons.delete,
+                              color: Colors.red, size: 30),
                           onPressed: _deleteSelectedPhotos,
                         ),
-                        IconButton(
-                          icon: const Icon(Icons.file_upload, color: Colors.blue, size: 30),
-                          onPressed: _exportSelectedPhotos,
-                        ),
+                        // Export-Button entfernt oder deaktiviert
                       ],
                     ),
                   ),
